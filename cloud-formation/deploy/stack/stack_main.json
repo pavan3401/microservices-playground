@@ -1,0 +1,691 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+
+    "Description" : "Main Stack to create a Bastion into a VPC with DMZ security group.",
+
+    "Parameters" : {
+
+        "Environment" : {
+            "Description" : "Environment name",
+            "Type" : "String",
+            "Default" : "test"
+        },
+
+        "KeyName" : {
+            "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+            "Type" : "String",
+            "Default" : "eureka"
+        },
+
+        "Release" : {
+            "Description" : "The Release that will be install",
+            "Type" : "String"
+        },
+
+        "AvailabilityZone1" : {
+            "Description" : "Primary availability zone",
+            "Type" : "String",
+            "Default" : "us-east-1a",
+            "AllowedValues" : ["us-east-1a", "us-east-1b", "us-east-1c", "us-east-1d", "us-west-2c", "us-west-2b", "us-west-2a"],
+            "ConstraintDescription" : "must be a valid availability zone."
+        },
+
+        "ConfigBucketName" : {
+            "Description" : "The S3 bucket containing server config files",
+            "Type" : "String",
+            "Default" : "eliza-eureka",
+            "ConstraintDescription" : "must be a string."
+        },
+
+        "BastionSSHFrom" : {
+            "Description" : "Lockdown SSH access to the bastion host",
+            "Type" : "String",
+            "MinLength": "9",
+            "MaxLength": "18",
+            "Default" : "0.0.0.0/0",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+            "ConstraintDescription" : "must be a valid CIDR range of the form x.x.x.x/x."
+        },
+
+        "BastionKey" : {
+            "Description" : "Keypair name for access into the bastion host",
+            "Type" : "String",
+            "Default" : "eureka",
+            "ConstraintDescription" : "must be an existing keypair name."
+        },
+
+        "NotifyEmail" : {
+            "Description" : "Email address to receive SNS messages",
+            "Type": "String",
+            "Default" : "egagne@teksystems.com",
+            "MinLength": "4",
+            "MaxLength": "128",
+            "AllowedPattern" : "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$",
+            "ConstraintDescription" : "must be a valid email address."
+        },
+
+        "NotifyDisplayName" : {
+            "Description" : "SNS topic display name.",
+            "Type": "String",
+            "Default" : "AWS-STP",
+            "MinLength": "1",
+            "MaxLength": "100",
+            "ConstraintDescription" : "must be a valid string of 100 characters or less."
+        },
+
+        "BastionInstanceType" : {
+            "Description" : "Bastion host instance type",
+            "Type" : "String",
+            "Default" : "t2.micro",
+            "AllowedValues" : [ "t1.micro","m1.small","m1.medium", "t2.micro","t2.small","t2.medium"],
+            "ConstraintDescription" : "must be a valid EC2 instance type."
+        }
+
+    },
+
+    "Mappings" : {
+        "AWSInstanceType2Arch" : {
+            "t1.micro"    : { "Arch" : "64" },
+            "t2.micro"    : { "Arch" : "64HVM" },
+            "t2.small"    : { "Arch" : "64" },
+            "t2.medium"   : { "Arch" : "64" },
+            "m1.small"    : { "Arch" : "64" },
+            "m1.medium"   : { "Arch" : "64" },
+            "m3.medium"   : { "Arch" : "64" },
+            "m3.large"    : { "Arch" : "64" },
+            "m1.xlarge"   : { "Arch" : "64" },
+            "m2.xlarge"   : { "Arch" : "64" },
+            "m2.2xlarge"  : { "Arch" : "64" },
+            "m2.4xlarge"  : { "Arch" : "64" },
+            "m3.xlarge"   : { "Arch" : "64" },
+            "m3.2xlarge"  : { "Arch" : "64" },
+            "c1.medium"   : { "Arch" : "64" },
+            "c1.xlarge"   : { "Arch" : "64" },
+            "cc1.4xlarge" : { "Arch" : "64HVM" },
+            "cc2.8xlarge" : { "Arch" : "64HVM" },
+            "cg1.4xlarge" : { "Arch" : "64HVM" }
+        },
+
+        "BastionBaseAMI" : {
+            "us-east-1"      : { "64HVM" : "ami-60b6c60a" }
+        },
+
+        "RegionZone" : {
+            "us-east-1"     : {"AZ1" : "us-east-1a", "AZ2" : "us-east-1c", "AZ3" : "us-east-1d"},
+            "us-west-1"     : {"AZ1" : "us-west-1a", "AZ2" : "us-west-1b", "AZ3" : "us-west-1c"},
+            "us-west-2"     : {"AZ1" : "us-west-2a", "AZ2" : "us-west-2b", "AZ3" : "us-west-2c"}
+        },
+
+        "SubnetConfig" : {
+            "VPC" : { "CIDR" : "172.17.0.0/20" },
+            "DMZ" : { "CIDR" : "172.17.10.0/27" },
+            "AppPublic1": { "CIDR": "172.17.0.0/24"},
+            "AppPublic2": { "CIDR": "172.17.1.0/24" },
+            "AppPublic3": { "CIDR": "172.17.2.0/24" },
+            "AppInt1": { "CIDR": "172.17.2.0/24" },
+            "AppInt2": { "CIDR": "172.17.3.0/24" },
+            "AppInt3": { "CIDR": "172.17.4.0/24" }
+        }
+    },
+
+    "Resources" : {
+
+        "CfnUser" : {
+            "Type" : "AWS::IAM::User",
+            "Properties" : {
+                "Path": "/",
+                "Policies": [{
+                    "PolicyName": "root",
+                    "PolicyDocument": {
+                        "Statement": [{
+                            "Effect" : "Allow",
+                            "Action" : [
+                                "cloudformation:DescribeStackResource",
+                                "s3:GetObject",
+                                "iam:GetUser",
+                                "iam:GetUserPolicy",
+                                "iam:ListUserPolicies",
+                                "iam:ListUsers"],
+                            "Resource" : "*"
+                        }]}},
+
+                    {"PolicyName": "ConfigBucket",
+                        "PolicyDocument": { "Statement":[{
+                            "Effect" : "Allow",
+                            "Action" : "*",
+                            "Resource" : { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ConfigBucketName" }]]}
+                        }]}}]
+            }
+        },
+
+        "CfnKeys" : {
+            "Type" : "AWS::IAM::AccessKey",
+            "Properties" : {
+                "UserName" : {"Ref": "CfnUser"}
+            }
+        },
+
+        "Notify" : {
+            "Type" : "AWS::SNS::Topic",
+            "Properties" : {
+                "DisplayName" : {"Fn::Join" : ["", [{ "Ref" : "NotifyDisplayName" }, { "Ref" : "Environment" }]]},
+                "Subscription" : [ { "Endpoint" : { "Ref" : "NotifyEmail"}, "Protocol" : "email" } ]
+            }
+        },
+
+        "VPC" : {
+            "Type" : "AWS::EC2::VPC",
+            "Properties" : {
+                "CidrBlock" : { "Fn::FindInMap" : [ "SubnetConfig", "VPC", "CIDR" ]},
+                "Tags" : [
+                    { "Key" : "Env", "Value" : { "Ref" : "Environment" } },
+                    { "Key" : "Name", "Value" : { "Ref" : "Environment" } },
+                    { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } } ]
+            }
+        },
+
+        "DMZSubnet" : {
+            "Type" : "AWS::EC2::Subnet",
+            "Properties" : {
+                "VpcId" : { "Ref" : "VPC" },
+                "AvailabilityZone" : { "Ref" : "AvailabilityZone1"},
+                "CidrBlock" : { "Fn::FindInMap" : [ "SubnetConfig", "DMZ", "CIDR" ]},
+                "Tags" : [
+                    { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } },
+                    { "Key" : "Network", "Value" : "dmz" },
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [{ "Ref" : "Environment"}, "-DMZ"]]} },
+                    { "Key" : "Enviro", "Value" : { "Ref" : "Environment" }} ]
+            }
+        },
+
+        "InternetGateway" : {
+            "Type" : "AWS::EC2::InternetGateway",
+            "Properties" : {
+                "Tags" : [
+                    { "Key" : "Application", "Value" : { "Ref" : "AWS::StackName"} },
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [{ "Ref" : "Environment"}, "-InternetGateway"]]} },
+                    { "Key" : "Network", "Value" : "Public" } ]
+            }
+        },
+
+        "AttachGateway" : {
+            "Type" : "AWS::EC2::VPCGatewayAttachment",
+            "Properties" : {
+                "VpcId" : { "Ref" : "VPC" },
+                "InternetGatewayId" : { "Ref" : "InternetGateway" }
+            }
+        },
+
+        "PublicRouteTable" : {
+            "Type" : "AWS::EC2::RouteTable",
+            "Properties" : {
+                "VpcId" : {"Ref" : "VPC"},
+                "Tags" : [
+                    { "Key" : "Application", "Value" : { "Ref" : "AWS::StackName"} },
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [{ "Ref" : "Environment"}, "-PublicRouteTable"]]} },
+                    { "Key" : "Network", "Value" : "pub" } ]
+            }
+        },
+
+        "PublicRoute" : {
+            "Type" : "AWS::EC2::Route",
+            "Properties" : {
+                "RouteTableId" : { "Ref" : "PublicRouteTable" },
+                "DestinationCidrBlock" : "0.0.0.0/0",
+                "GatewayId" : { "Ref" : "InternetGateway" }
+            }
+        },
+
+        "PublicSubnetRouteTableAssociationDMZ" : {
+            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties" : {
+                "SubnetId" : { "Ref" : "DMZSubnet" },
+                "RouteTableId" : { "Ref" : "PublicRouteTable" }
+            }
+        },
+
+        "PublicSubnetRouteTableAssociationApp1": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {"Ref": "PubAppSubnet1" },
+                "RouteTableId": { "Ref": "PublicRouteTable" }
+            }
+        },
+
+        "PublicSubnetRouteTableAssociationApp2": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": { "Ref": "PubAppSubnet2" },
+                "RouteTableId": { "Ref": "PublicRouteTable" }
+            }
+        },
+
+        "PublicSubnetRouteTableAssociationApp3": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": { "Ref": "PubAppSubnet3" },
+                "RouteTableId": { "Ref": "PublicRouteTable" }
+            }
+        },
+
+        "NetworkAclApp" : {
+            "Type" : "AWS::EC2::NetworkAcl",
+            "Properties" : {
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [{ "Ref" : "Environment"}, "-EurekaAcl"]]} },
+                    { "Key" : "Log", "Value" : { "Ref" : "AWS::StackId" } } ]
+            }
+        },
+
+        "NetworkAclAssocApp1" : {
+            "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
+            "Properties" : {
+                "SubnetId" : { "Ref" : "AppInternalSubnet1" },
+                "NetworkAclId" : { "Ref" : "NetworkAclApp" }
+            }
+        },
+
+        "NetworkAclAssocApp2" : {
+            "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
+            "Properties" : {
+                "SubnetId" : { "Ref" : "AppInternalSubnet2" },
+                "NetworkAclId" : { "Ref" : "NetworkAclApp" }
+            }
+        },
+
+        "NetworkAclAssocApp3" : {
+            "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
+            "Properties" : {
+                "SubnetId" : { "Ref" : "AppInternalSubnet3" },
+                "NetworkAclId" : { "Ref" : "NetworkAclApp" }
+            }
+        },
+
+        "AclEntryAllowDefaultOutApp" : {
+            "Type" : "AWS::EC2::NetworkAclEntry",
+            "Properties" : {
+                "NetworkAclId" : { "Ref" : "NetworkAclApp" },
+                "RuleNumber" : "900",
+                "Protocol" : "-1",
+                "RuleAction" : "allow",
+                "Egress" : "true",
+                "CidrBlock" : "0.0.0.0/0"
+            }
+        },
+
+        "AclEntryAllowDefaultInApp" : {
+            "Type" : "AWS::EC2::NetworkAclEntry",
+            "Properties" : {
+                "NetworkAclId" : { "Ref" : "NetworkAclApp" },
+                "RuleNumber" : "1000",
+                "Protocol" : "-1",
+                "RuleAction" : "allow",
+                "Egress" : "false",
+                "CidrBlock" : "0.0.0.0/0"
+            }
+        },
+
+        "RouteTableAssociationApp1" : {
+            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties" : {
+                "SubnetId" : { "Ref" : "AppInternalSubnet1" },
+                "RouteTableId" : { "Ref" : "PublicRouteTable" }
+            }
+        },
+
+        "RouteTableAssociationApp2" : {
+            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties" : {
+                "SubnetId" : { "Ref" : "AppInternalSubnet2" },
+                "RouteTableId" : { "Ref" : "PublicRouteTable" }
+            }
+        },
+
+        "RouteTableAssociationApp3" : {
+            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties" : {
+                "SubnetId" : { "Ref" : "AppInternalSubnet3" },
+                "RouteTableId" : { "Ref" : "PublicRouteTable" }
+            }
+        },
+
+        "PubAppSubnet1" : {
+            "Type" :  "AWS::EC2::Subnet",
+            "Properties" : {
+                "VpcId" : { "Ref" : "VPC" },
+                "AvailabilityZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ1"] },
+                "CidrBlock" : { "Fn::FindInMap" : [ "SubnetConfig", "AppPublic1", "CIDR" ]},
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [{ "Ref" : "Environment"}, "-PubApp1"]]} },
+                    { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } },
+                    { "Key" : "Network", "Value" : "AppInt" },
+                    { "Key" : "Env", "Value" : { "Ref" : "Environment" } } ]
+            }
+        },
+
+        "PubAppSubnet2" : {
+            "Type" : "AWS::EC2::Subnet",
+            "Properties" : {
+                "VpcId" : { "Ref" : "VPC" },
+                "AvailabilityZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ2"] },
+                "CidrBlock" : { "Fn::FindInMap" : [ "SubnetConfig", "AppPublic2", "CIDR" ]},
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [{ "Ref" : "Environment"}, "-PubApp2"]]} },
+                    { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } },
+                    { "Key" : "Network", "Value" : "AppInt" },
+                    { "Key" : "Env", "Value" : { "Ref" : "Environment" } } ]
+            }
+        },
+
+        "PubAppSubnet3" : {
+            "Type" : "AWS::EC2::Subnet",
+            "Properties" : {
+                "VpcId" : { "Ref" : "VPC" },
+                "AvailabilityZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ3"] },
+                "CidrBlock" : { "Fn::FindInMap" : [ "SubnetConfig", "AppPublic3", "CIDR" ]},
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [{ "Ref" : "Environment"}, "-PubApp3"]]} },
+                    { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } },
+                    { "Key" : "Network", "Value" : "AppInt" },
+                    { "Key" : "Env", "Value" : { "Ref" : "Environment" } } ]
+            }
+        },
+
+        "AppInternalSubnet1" : {
+            "Type" :  "AWS::EC2::Subnet",
+            "Properties" : {
+                "VpcId" : { "Ref" : "VPC" },
+                "AvailabilityZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ1"] },
+                "CidrBlock" : { "Fn::FindInMap" : [ "SubnetConfig", "AppInt1", "CIDR" ]},
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [{ "Ref" : "Environment"}, "-AppInternal1"]]} },
+                    { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } },
+                    { "Key" : "Network", "Value" : "AppInt" },
+                    { "Key" : "Env", "Value" : { "Ref" : "Environment" } } ]
+            }
+        },
+
+        "AppInternalSubnet2" : {
+            "Type" : "AWS::EC2::Subnet",
+            "Properties" : {
+                "VpcId" : { "Ref" : "VPC" },
+                "AvailabilityZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ2"] },
+                "CidrBlock" : { "Fn::FindInMap" : [ "SubnetConfig", "AppInt2", "CIDR" ]},
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [{ "Ref" : "Environment"}, "-AppInternal2"]]} },
+                    { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } },
+                    { "Key" : "Network", "Value" : "AppInt" },
+                    { "Key" : "Env", "Value" : { "Ref" : "Environment" } } ]
+            }
+        },
+
+        "AppInternalSubnet3" : {
+            "Type" : "AWS::EC2::Subnet",
+            "Properties" : {
+                "VpcId" : { "Ref" : "VPC" },
+                "AvailabilityZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ3"] },
+                "CidrBlock" : { "Fn::FindInMap" : [ "SubnetConfig", "AppInt3", "CIDR" ]},
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [{ "Ref" : "Environment"}, "-AppInternal3"]]} },
+                    { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } },
+                    { "Key" : "Network", "Value" : "AppInt" },
+                    { "Key" : "Env", "Value" : { "Ref" : "Environment" } } ]
+            }
+        },
+
+        "EurekaServerLoadBalancerSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "VpcId": { "Ref" : "VPC" },
+                "GroupDescription": "ELB security group",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Eureka ELB security group"
+                    }
+                ],
+                "SecurityGroupIngress": {
+                    "IpProtocol": "tcp",
+                    "FromPort": "8761",
+                    "ToPort": "8761",
+                    "CidrIp": "0.0.0.0/0"
+                }
+            }
+        },
+
+        "WebappLoadBalancerSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "VpcId": { "Ref" : "VPC" },
+                "GroupDescription": "ELB security group",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Webapp ELB security group"
+                    }
+                ],
+                "SecurityGroupIngress": {
+                    "IpProtocol": "tcp",
+                    "FromPort": "80",
+                    "ToPort": "80",
+                    "CidrIp": "0.0.0.0/0"
+                }
+            }
+        },
+
+        "BastionSecGrp" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : "Entry Point for SSH traffic",
+                "VpcId" : { "Ref" : "VPC" },
+                "SecurityGroupIngress" : [
+                    { "IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "0.0.0.0/0"}],
+                "Tags" : [ { "Key" : "Name", "Value" : { "Fn::Join" : ["", [{ "Ref" : "Environment"}, "-Bastion"]]}} ]
+            }
+        },
+
+        "BastionEIP" : {
+            "Type" : "AWS::EC2::EIP",
+            "Properties" : {
+                "Domain" : "vpc"
+            }
+        },
+
+        "BastionEIPAssociation" : {
+            "Type" : "AWS::EC2::EIPAssociation",
+            "Properties" : {
+                "AllocationId" : { "Fn::GetAtt" : [ "BastionEIP", "AllocationId" ] },
+                "InstanceId": { "Ref" : "BastionInstance" }
+            }
+        },
+
+        "BastionInstance" : {
+            "Type" : "AWS::EC2::Instance",
+            "Metadata" : {
+                "BuildNumber" : { "Ref" : "Release" },
+
+                "AWS::CloudFormation::Authentication" : {
+                    "S3AccessCreds" : {
+                        "type" : "S3",
+                        "accessKeyId" : { "Ref" : "CfnKeys" },
+                        "secretKey" : {"Fn::GetAtt": ["CfnKeys", "SecretAccessKey"]},
+                        "buckets" : [ { "Ref" : "ConfigBucketName" } ]
+                    }
+                },
+
+                "AWS::CloudFormation::Init": {
+                    "configSets": {
+                        "provision": [ "step1"]
+                    },
+                    "step1" : {
+                        "files" : {
+                            "/etc/cfn/cfn-hup.conf" : {
+                                "content" : { "Fn::Join" : ["", [
+                                    "[main]\n",
+                                    "stack=", { "Ref" : "AWS::StackName" }, "\n",
+                                    "credential-file=/etc/cfn/cfn-credentials\n",
+                                    "interval=1\n",
+                                    "region=", { "Ref" : "AWS::Region" }, "\n"
+                                ]]},
+                                "mode"    : "000400",
+                                "owner"   : "root",
+                                "group"   : "root"
+                            },
+                            "/etc/cfn/cfn-credentials" : {
+                                "content" : { "Fn::Join" : ["", [
+                                    "AWSAccessKeyId=", { "Ref" : "CfnKeys" }, "\n",
+                                    "AWSSecretKey=", {"Fn::GetAtt": ["CfnKeys", "SecretAccessKey"]}, "\n"
+                                ]]},
+                                "mode"    : "000400",
+                                "owner"   : "root",
+                                "group"   : "root"
+                            },
+                            "/etc/cfn/hooks.d/cfn-auto-reloader.conf" : {
+                                "content": { "Fn::Join" : ["", [
+                                    "[cfn-auto-reloader-hook]\n",
+                                    "triggers=post.update\n",
+                                    "path=Resources.BastionInstance.Metadata.BuildNumber\n",
+                                    "action=/opt/aws/bin/cfn-init -s ", { "Ref" : "AWS::StackId" }, " -r BastionInstance -c provision",
+                                    " --region ", { "Ref" : "AWS::Region" }, "\n",
+                                    "runas=root\n"
+                                ]]}
+                            }
+                        },
+                        "services" : {
+                            "sysvinit" : {
+                                "cfn-hup" : {
+                                    "enabled" : "true",
+                                    "ensureRunning" : "true"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "Properties" : {
+                "ImageId" : { "Fn::FindInMap" : [ "BastionBaseAMI", { "Ref" : "AWS::Region" },
+                    { "Fn::FindInMap" : [ "AWSInstanceType2Arch", { "Ref" : "BastionInstanceType" },
+                        "Arch" ] } ] },
+                "AvailabilityZone" : { "Fn::GetAtt" : [ "DMZSubnet", "AvailabilityZone" ] },
+                "SourceDestCheck" : "true",
+                "KeyName": { "Ref" : "BastionKey" },
+                "Monitoring" : "true",
+                "SubnetId" : { "Ref" : "DMZSubnet" },
+                "SecurityGroupIds" : [ {"Ref" : "BastionSecGrp"}  ],
+                "InstanceType" : { "Ref" : "BastionInstanceType" },
+                "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
+                    "#!/bin/bash\n",
+
+                    "## Error reporting helper function\n",
+                    "function error_exit\n",
+                    "{\n",
+                    "   /opt/aws/bin/cfn-signal -e 1 -r \"$1\" '", { "Ref" : "WaitHandleBastion" }, "'\n",
+                    "   exit 1\n",
+                    "}\n",
+
+                    "/opt/aws/bin/cfn-init -s ", { "Ref" : "AWS::StackId" }, " -r BastionInstance -c provision",
+                    " --region ", { "Ref" : "AWS::Region" },  " || error_exit 'Failed to run cfn-init'\n",
+
+                    "/opt/aws/bin/cfn-hup || error_exit 'Failed to start cfn-hup'\n",
+
+                    "/opt/aws/bin/cfn-signal -e $? '", { "Ref" : "WaitHandleBastion" }, "'\n"
+
+                ]]}},
+                "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : ["", [{ "Ref" : "Environment"}, "-Bastion"]]}} ]
+            },
+            "DependsOn" : "BastionSecGrp"
+        },
+
+        "WaitHandleBastion" : {
+            "Type" : "AWS::CloudFormation::WaitConditionHandle"
+        },
+
+        "WaitConditionBastion" : {
+            "Type" : "AWS::CloudFormation::WaitCondition",
+            "DependsOn" : "BastionInstance",
+            "Properties" : {
+                "Handle" : {"Ref" : "WaitHandleBastion"},
+                "Timeout" : "600"
+            }
+        },
+
+        "EcsInfrastructure" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "BastionInstance",
+            "Properties" : {
+                "TemplateURL" : { "Fn::Join" : ["",["https://s3.amazonaws.com/",{"Ref" : "ConfigBucketName"}, "/deploy/stack/stack_ecs.json"]]},
+                "Parameters" : {
+                    "KeyName" : { "Ref" : "KeyName" },
+                    "Environment" : { "Ref" : "Environment" },
+                    "PrivateSubnet1Id" : { "Ref" : "AppInternalSubnet1" },
+                    "PrivateSubnet2Id" : { "Ref" : "AppInternalSubnet2" },
+                    "PrivateSubnet3Id" : { "Ref" : "AppInternalSubnet3" },
+                    "PublicSubnet1Id" : { "Ref" : "PubAppSubnet1"},
+                    "PublicSubnet2Id" : { "Ref" : "PubAppSubnet2"},
+                    "PublicSubnet3Id" : { "Ref" : "PubAppSubnet3"},
+                    "BastionSecGrp" : { "Ref" : "BastionSecGrp"},
+                    "EurekaServerLoadBalancerSecurityGroup" : { "Ref" : "EurekaServerLoadBalancerSecurityGroup"},
+                    "WebappLoadBalancerSecurityGroup" : { "Ref" : "WebappLoadBalancerSecurityGroup"},
+                    "VpcId" : { "Ref" : "VPC"}
+                }
+            }
+        },
+
+        "EurekaServers" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "EcsInfrastructure",
+            "Properties" : {
+                "TemplateURL" : { "Fn::Join" : ["",["https://s3.amazonaws.com/",{"Ref" : "ConfigBucketName"}, "/deploy/stack/stack_eureka.json"]]},
+                "Parameters" : {
+                    "KeyName" : { "Ref" : "KeyName" },
+                    "Environment" : { "Ref" : "Environment" },
+                    "PublicSubnet1Id" : { "Ref" : "PubAppSubnet1"},
+                    "PublicSubnet2Id" : { "Ref" : "PubAppSubnet2"},
+                    "PublicSubnet3Id" : { "Ref" : "PubAppSubnet3"},
+                    "EurekaServerLoadBalancerSecurityGroup" : { "Ref" : "EurekaServerLoadBalancerSecurityGroup"},
+                    "EcsCluster" : { "Fn::GetAtt" : [ "EcsInfrastructure", "Outputs.EcsCluster" ] },
+                    "EcsServiceRole" : { "Fn::GetAtt" : [ "EcsInfrastructure", "Outputs.EcsServiceRole" ] }
+                }
+            }
+        },
+
+        "Microservices" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : "EurekaServers",
+            "Properties" : {
+                "TemplateURL" : { "Fn::Join" : ["",["https://s3.amazonaws.com/",{"Ref" : "ConfigBucketName"}, "/deploy/stack/stack_microservices.json"]]},
+                "Parameters" : {
+                    "KeyName" : { "Ref" : "KeyName" },
+                    "Environment" : { "Ref" : "Environment" },
+                    "PublicSubnet1Id" : { "Ref" : "PubAppSubnet1"},
+                    "PublicSubnet2Id" : { "Ref" : "PubAppSubnet2"},
+                    "PublicSubnet3Id" : { "Ref" : "PubAppSubnet3"},
+                    "EurekaServerLoadBalancerSecurityGroup" : { "Ref" : "EurekaServerLoadBalancerSecurityGroup"},
+                    "EcsCluster" : { "Fn::GetAtt" : [ "EcsInfrastructure", "Outputs.EcsCluster" ] },
+                    "EcsServiceRole" : { "Fn::GetAtt" : [ "EcsInfrastructure", "Outputs.EcsServiceRole" ] },
+                    "EurekaUrl" : { "Fn::GetAtt" : [ "EurekaServers", "Outputs.EurekaUrl" ] }
+                }
+            }
+        }
+    },
+
+    "Outputs" : {
+
+        "BastionEIP" : {
+            "Description" : "Bastion host elastic IP address",
+            "Value" : { "Ref" : "BastionEIP" }
+        },
+
+        "VPCID" : {
+            "Description" : "ID of new VPC",
+            "Value" : { "Ref" : "VPC" }
+        },
+
+        "WebappUrl": {
+            "Value": {
+                "Fn::GetAtt": [ "Microservices","Outputs.WebappUrl" ]
+            }
+        }
+    }
+}

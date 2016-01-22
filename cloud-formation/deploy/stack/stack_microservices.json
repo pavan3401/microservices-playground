@@ -1,0 +1,369 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+
+    "Description": "Sub Stack to deploy several microservices.",
+
+    "Parameters": {
+
+        "PublicSubnet1Id": {
+            "Description": "Public subnet 1 id",
+            "Type": "AWS::EC2::Subnet::Id"
+        },
+
+        "PublicSubnet2Id": {
+            "Description": "Public subnet 2 id",
+            "Type": "AWS::EC2::Subnet::Id"
+        },
+
+        "PublicSubnet3Id": {
+            "Description": "Public subnet 3 id",
+            "Type": "AWS::EC2::Subnet::Id"
+        },
+
+        "KeyName": {
+            "Description": "keypair",
+            "Type": "AWS::EC2::KeyPair::KeyName"
+        },
+
+        "WebappLoadBalancerSecurityGroup" : {
+            "Description" : "Web Servers Security Group",
+            "Type" : "String"
+        },
+
+        "Environment" : {
+            "Description" : "Environment for this deployment",
+            "Type" : "String"
+        },
+
+        "EcsServiceRole" : {
+            "Description" : "Ecs Service Role",
+            "Type": "AWS::IAM::Role"
+        },
+
+        "EcsCluster" : {
+            "Description" : "Ecs Cluster",
+            "Type": "AWS::ECS::Cluster"
+        },
+
+        "EurekaUrl" : {
+            "Description" : "Eureka Servers LoadBalancer Url",
+            "Type" : "String"
+        }
+    },
+
+    "Resources": {
+
+        "WebappLoadBalancer": {
+            "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+            "Properties": {
+                "CrossZone": true,
+                "Subnets": [
+                    {
+                        "Ref": "PublicSubnet1Id"
+                    },
+                    {
+                        "Ref": "PublicSubnet2Id"
+                    },
+                    {
+                        "Ref": "PublicSubnet3Id"
+                    }
+                ],
+                "Listeners": [
+                    {
+                        "LoadBalancerPort": "80",
+                        "InstancePort": "80",
+                        "Protocol": "HTTP"
+                    }
+                ],
+                "HealthCheck": {
+                    "Target": "HTTP:80/health",
+                    "HealthyThreshold": "2",
+                    "UnhealthyThreshold": "10",
+                    "Interval": "30",
+                    "Timeout": "5"
+                },
+                "SecurityGroups": [
+                    {
+                        "Ref": "WebappLoadBalancerSecurityGroup"
+                    }
+                ]
+            }
+        },
+
+        "WebappTask": {
+            "Type": "AWS::ECS::TaskDefinition",
+            "Properties": {
+                "ContainerDefinitions": [
+                    {
+                        "Name": "webapp",
+                        "Image": "egagne/webapp",
+                        "Memory": "1024",
+                        "Environment": [
+                            {
+                                "Name": "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE",
+                                "Value": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "http://",
+                                            {
+                                                "Ref" : "EurekaUrl"
+                                            },
+                                            ":8761/eureka/"
+                                        ]
+                                    ]
+                                }
+                            },
+                            {
+                                "Name": "EUREKA_INSTANCE_HOSTNAME",
+                                "Value": "${local-ipv4:N/A}"
+                            },
+                            {
+                                "Name": "SPRING_CLOUD_CONFIG_DISCOVERY_ENABLED",
+                                "Value": "true"
+                            },
+                            {
+                                "Name": "SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID",
+                                "Value": "config-server"
+                            },
+                            {
+                                "Name": "SPRING_PROFILES_ACTIVE",
+                                "Value": "syslog"
+                            }
+                        ],
+                        "PortMappings": [
+                            {
+                                "HostPort": 80,
+                                "ContainerPort": 8080
+                            }
+                        ],
+                        "Links": [
+                            "logs"
+                        ]
+                    },
+                    {
+                        "Name": "logs",
+                        "Image": "kanicz/ecs-cloudwatch-logs",
+                        "Memory": "64",
+                        "MountPoints": [
+                            {
+                                "SourceVolume": "ecs_instance_logs",
+                                "ContainerPath": "/mnt/ecs_instance_logs"
+                            }
+                        ]
+                    }
+                ],
+                "Volumes": [
+                    {
+                        "Name": "ecs_instance_logs",
+                        "Host": {
+                            "SourcePath": "/var/log"
+                        }
+                    }
+                ]
+            }
+        },
+
+        "WebappService": {
+            "Type": "AWS::ECS::Service",
+            "Properties": {
+                "Cluster": {
+                    "Ref": "EcsCluster"
+                },
+                "DesiredCount": "1",
+                "LoadBalancers": [
+                    {
+                        "ContainerName": "webapp",
+                        "ContainerPort": "8080",
+                        "LoadBalancerName": {
+                            "Ref": "WebappLoadBalancer"
+                        }
+                    }
+                ],
+                "Role": {
+                    "Ref": "EcsServiceRole"
+                },
+                "TaskDefinition": {
+                    "Ref": "WebappTask"
+                }
+            }
+        },
+
+        "WeatherServiceTask": {
+            "Type": "AWS::ECS::TaskDefinition",
+            "Properties": {
+                "ContainerDefinitions": [
+                    {
+                        "Name": "service",
+                        "Image": "egagne/weather-service",
+                        "Memory": "1024",
+                        "Environment": [
+                            {
+                                "Name": "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE",
+                                "Value": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "http://",
+                                            {
+                                                "Ref" : "EurekaUrl"
+                                            },
+                                            ":8761/eureka/"
+                                        ]
+                                    ]
+                                }
+                            },
+                            {
+                                "Name": "EUREKA_INSTANCE_HOSTNAME",
+                                "Value": "${local-ipv4:N/A}"
+                            },
+                            {
+                                "Name": "SPRING_CLOUD_CONFIG_DISCOVERY_ENABLED",
+                                "Value": "true"
+                            },
+                            {
+                                "Name": "SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID",
+                                "Value": "config-server"
+                            },
+                            {
+                                "Name": "SPRING_PROFILES_ACTIVE",
+                                "Value": "syslog"
+                            }
+                        ],
+                        "PortMappings": [
+                            {
+                                "HostPort": 8081,
+                                "ContainerPort": 8081
+                            }
+                        ],
+                        "Links": [
+                            "logs"
+                        ]
+                    },
+                    {
+                        "Name": "logs",
+                        "Image": "kanicz/ecs-cloudwatch-logs",
+                        "Memory": "64",
+                        "MountPoints": [
+                            {
+                                "SourceVolume": "ecs_instance_logs",
+                                "ContainerPath": "/mnt/ecs_instance_logs"
+                            }
+                        ]
+                    }
+                ],
+                "Volumes": [
+                    {
+                        "Name": "ecs_instance_logs",
+                        "Host": {
+                            "SourcePath": "/var/log"
+                        }
+                    }
+                ]
+            }
+        },
+
+        "WeatherServiceService": {
+            "Type": "AWS::ECS::Service",
+            "Properties": {
+                "Cluster": {
+                    "Ref": "EcsCluster"
+                },
+                "DesiredCount": "1",
+                "TaskDefinition": {
+                    "Ref": "WeatherServiceTask"
+                }
+            }
+        },
+
+        "ConfigServerTask": {
+            "Type": "AWS::ECS::TaskDefinition",
+            "Properties": {
+                "ContainerDefinitions": [
+                    {
+                        "Name": "config-server",
+                        "Image": "kanicz/microservices-config-server",
+                        "Memory": "1024",
+                        "Environment": [
+                            {
+                                "Name": "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE",
+                                "Value": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "http://",
+                                            {
+                                                "Ref" : "EurekaUrl"
+                                            },
+                                            ":8761/eureka/"
+                                        ]
+                                    ]
+                                }
+                            },
+                            {
+                                "Name": "EUREKA_INSTANCE_HOSTNAME",
+                                "Value": "${local-ipv4:N/A}"
+                            },
+                            {
+                                "Name": "SPRING_PROFILES_ACTIVE",
+                                "Value": "syslog"
+                            }
+                        ],
+                        "PortMappings": [
+                            {
+                                "HostPort": 9000,
+                                "ContainerPort": 9000
+                            }
+                        ],
+                        "Links": [
+                            "logs"
+                        ]
+                    },
+                    {
+                        "Name": "logs",
+                        "Image": "kanicz/ecs-cloudwatch-logs",
+                        "Memory": "64",
+                        "MountPoints": [
+                            {
+                                "SourceVolume": "ecs_instance_logs",
+                                "ContainerPath": "/mnt/ecs_instance_logs"
+                            }
+                        ]
+                    }
+                ],
+                "Volumes": [
+                    {
+                        "Name": "ecs_instance_logs",
+                        "Host": {
+                            "SourcePath": "/var/log"
+                        }
+                    }
+                ]
+            }
+        },
+
+        "ConfigServerService": {
+            "Type": "AWS::ECS::Service",
+            "Properties": {
+                "Cluster": {
+                    "Ref": "EcsCluster"
+                },
+                "DesiredCount": "1",
+                "TaskDefinition": {
+                    "Ref": "ConfigServerTask"
+                }
+            }
+        }
+    },
+
+    "Outputs": {
+        "WebappUrl": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "WebappLoadBalancer",
+                    "DNSName"
+                ]
+            }
+        }
+    }
+}

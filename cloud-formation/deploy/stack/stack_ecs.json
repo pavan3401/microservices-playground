@@ -1,0 +1,499 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+
+    "Description": "Sub Stack to create an ECS Cluster.",
+
+    "Mappings": {
+        "RegionMap": {
+            "us-east-1": {
+                "AMI": "ami-9886a0f2"
+            },
+            "us-west-1": {
+                "AMI": "ami-caf581aa"
+            },
+            "us-west-2" : {
+                "AMI": "ami-1ead497e"
+            }
+        }
+    },
+
+    "Parameters": {
+        "InstanceType": {
+            "Description": "The EC2 instance type inside ECS cluster.",
+            "Type": "String",
+            "Default": "t2.small"
+        },
+
+        "VpcId": {
+            "Description": "VPC Id",
+            "Type": "AWS::EC2::VPC::Id"
+        },
+
+        "ClusterSize": {
+            "Description": "ECS Cluster size",
+            "Type": "Number",
+            "Default": 4
+        },
+
+        "PrivateSubnet1Id": {
+            "Description": "Private subnet 1 Id",
+            "Type": "AWS::EC2::Subnet::Id"
+        },
+
+        "PrivateSubnet2Id": {
+            "Description": "Private subnet 2 Id",
+            "Type": "AWS::EC2::Subnet::Id"
+        },
+
+        "PrivateSubnet3Id": {
+            "Description": "Private subnet 3 Id",
+            "Type": "AWS::EC2::Subnet::Id"
+        },
+
+        "PublicSubnet1Id": {
+            "Description": "Public subnet 1 id",
+            "Type": "AWS::EC2::Subnet::Id"
+        },
+
+        "PublicSubnet2Id": {
+            "Description": "Public subnet 2 id",
+            "Type": "AWS::EC2::Subnet::Id"
+        },
+
+        "PublicSubnet3Id": {
+            "Description": "Public subnet 3 id",
+            "Type": "AWS::EC2::Subnet::Id"
+        },
+
+        "KeyName": {
+            "Description": "keypair",
+            "Type": "AWS::EC2::KeyPair::KeyName"
+        },
+
+        "BastionSecGrp" : {
+            "Description" : "Bastion Security Group",
+            "Type" : "String"
+        },
+
+        "EurekaServerLoadBalancerSecurityGroup" : {
+            "Description" : "Eureka Servers Security Group",
+            "Type" : "String"
+        },
+
+        "WebappLoadBalancerSecurityGroup" : {
+            "Description" : "Web Servers Security Group",
+            "Type" : "String"
+        },
+
+        "Environment" : {
+            "Description" : "Environment for this deployment",
+            "Type" : "String"
+        }
+    },
+
+    "Resources": {
+
+        "EcsCluster": {
+            "Type": "AWS::ECS::Cluster"
+        },
+
+        "EcsClusterAutoScalingGroup": {
+            "Type": "AWS::AutoScaling::AutoScalingGroup",
+            "Properties": {
+                "VPCZoneIdentifier": [
+                    {
+                        "Ref": "PrivateSubnet1Id"
+                    },
+                    {
+                        "Ref": "PrivateSubnet2Id"
+                    },
+                    {
+                        "Ref": "PrivateSubnet3Id"
+                    }
+                ],
+                "LaunchConfigurationName": {
+                    "Ref": "EcsClusterLaunchConfiguration"
+                },
+                "MinSize": {
+                    "Ref": "ClusterSize"
+                },
+                "MaxSize": {
+                    "Ref": "ClusterSize"
+                },
+                "DesiredCapacity": {
+                    "Ref": "ClusterSize"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "Environment"
+                                    },
+                                    "-EcsInstance"
+                                ]
+                            ]
+                        },
+                        "PropagateAtLaunch": "true"
+                    },
+                    {
+                        "Key": "role",
+                        "Value": "app",
+                        "PropagateAtLaunch": "true"
+                    },
+                    {
+                        "Key": "env",
+                        "Value": {
+                            "Ref": "Environment"
+                        },
+                        "PropagateAtLaunch": "true"
+                    }
+                ]
+            },
+            "UpdatePolicy": {
+                "AutoScalingRollingUpdate": {
+                    "MinInstancesInService": "1",
+                    "MaxBatchSize": "1",
+                    "PauseTime": "PT15M",
+                    "WaitOnResourceSignals": "true"
+                }
+            }
+        },
+
+        "EcsClusterLaunchConfiguration": {
+            "Type": "AWS::AutoScaling::LaunchConfiguration",
+            "Metadata": {
+                "AWS::CloudFormation::Init": {
+                    "config": {
+                        "commands": {
+                            "01_add_instance_to_cluster": {
+                                "command": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "#!/bin/bash\n",
+                                            "echo ECS_CLUSTER=",
+                                            {
+                                                "Ref": "EcsCluster"
+                                            },
+                                            " >> /etc/ecs/ecs.config"
+                                        ]
+                                    ]
+                                }
+                            }
+                        },
+                        "files": {
+                            "/etc/cfn/cfn-hup.conf": {
+                                "content": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "[main]\n",
+                                            "stack=",
+                                            {
+                                                "Ref": "AWS::StackId"
+                                            },
+                                            "\n",
+                                            "region=",
+                                            {
+                                                "Ref": "AWS::Region"
+                                            },
+                                            "\n"
+                                        ]
+                                    ]
+                                },
+                                "mode": "000400",
+                                "owner": "root",
+                                "group": "root"
+                            },
+                            "/etc/cfn/hooks.d/cfn-auto-reloader.conf": {
+                                "content": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "[cfn-auto-reloader-hook]\n",
+                                            "triggers=post.update\n",
+                                            "path=Resources.EcsClusterLaunchConfiguration.Metadata.AWS::CloudFormation::Init\n",
+                                            "action=/opt/aws/bin/cfn-init -v ",
+                                            "         --stack ",
+                                            {
+                                                "Ref": "AWS::StackName"
+                                            },
+                                            "         --resource EcsClusterLaunchConfiguration ",
+                                            "         --region ",
+                                            {
+                                                "Ref": "AWS::Region"
+                                            },
+                                            "\n",
+                                            "runas=root\n"
+                                        ]
+                                    ]
+                                }
+                            }
+                        },
+                        "services": {
+                            "sysvinit": {
+                                "cfn-hup": {
+                                    "enabled": "true",
+                                    "ensureRunning": "true",
+                                    "files": [
+                                        "/etc/cfn/cfn-hup.conf",
+                                        "/etc/cfn/hooks.d/cfn-auto-reloader.conf"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "Properties": {
+                "ImageId": {
+                    "Fn::FindInMap": [
+                        "RegionMap",
+                        {
+                            "Ref": "AWS::Region"
+                        },
+                        "AMI"
+                    ]
+                },
+                "InstanceType": {
+                    "Ref": "InstanceType"
+                },
+                "IamInstanceProfile": {
+                    "Ref": "EcsInstanceProfile"
+                },
+                "KeyName": {
+                    "Ref": "KeyName"
+                },
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash -xe\n",
+                                "yum install -y aws-cfn-bootstrap\n",
+                                "/opt/aws/bin/cfn-init -v ",
+                                "         --stack ",
+                                {
+                                    "Ref": "AWS::StackName"
+                                },
+                                "         --resource EcsClusterLaunchConfiguration ",
+                                "         --region ",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                "\n",
+                                "/opt/aws/bin/cfn-signal -e $? ",
+                                "         --stack ",
+                                {
+                                    "Ref": "AWS::StackName"
+                                },
+                                "         --resource EcsClusterAutoScalingGroup ",
+                                "         --region ",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                "\n"
+                            ]
+                        ]
+                    }
+                },
+                "SecurityGroups": [
+                    {
+                        "Ref": "EcsSecurityGroup"
+                    }
+                ]
+            }
+        },
+
+        "EcsServiceRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ecs.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Path": "/",
+                "Policies": [
+                    {
+                        "PolicyName": "ecs-service",
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "elasticloadbalancing:Describe*",
+                                        "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
+                                        "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
+                                        "ec2:Describe*",
+                                        "ec2:AuthorizeSecurityGroupIngress"
+                                    ],
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+
+        "EcsIamRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Path": "/",
+                "Policies": [
+                    {
+                        "PolicyName": "ecs-service",
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "ecs:CreateCluster",
+                                        "ecs:RegisterContainerInstance",
+                                        "ecs:DeregisterContainerInstance",
+                                        "ecs:DiscoverPollEndpoint",
+                                        "ecs:Submit*",
+                                        "ecs:Poll"
+                                    ],
+                                    "Resource": "*"
+                                },
+                                {
+                                    "Resource": "arn:aws:logs:*:*:*",
+                                    "Action": [
+                                        "logs:Create*",
+                                        "logs:PutLogEvents",
+                                        "logs:CreateLogGroup",
+                                        "logs:CreateLogStream",
+                                        "logs:DescribeLogStreams"
+                                    ],
+                                    "Effect": "Allow"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+
+        "EcsInstanceProfile": {
+            "Type": "AWS::IAM::InstanceProfile",
+            "Properties": {
+                "Path": "/",
+                "Roles": [
+                    {
+                        "Ref": "EcsIamRole"
+                    }
+                ]
+            }
+        },
+
+        "EcsSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VpcId"
+                },
+                "GroupDescription": "Ecs security group",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Ecs security group"
+                    }
+                ],
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "22",
+                        "ToPort": "22",
+                        "SourceSecurityGroupId": {
+                            "Ref": "BastionSecGrp"
+                        }
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "80",
+                        "ToPort": "80",
+                        "SourceSecurityGroupId": {
+                            "Ref": "WebappLoadBalancerSecurityGroup"
+                        }
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "8761",
+                        "ToPort": "8761",
+                        "SourceSecurityGroupId": {
+                            "Ref": "EurekaServerLoadBalancerSecurityGroup"
+                        }
+                    }
+                ]
+            }
+        },
+
+        "EcsSelfIngress": {
+            "Type": "AWS::EC2::SecurityGroupIngress",
+            "Properties": {
+                "IpProtocol": "tcp",
+                "FromPort": "0",
+                "ToPort": "65535",
+                "SourceSecurityGroupId": {
+                    "Fn::GetAtt": [
+                        "EcsSecurityGroup",
+                        "GroupId"
+                    ]
+                },
+                "GroupId": {
+                    "Fn::GetAtt": [
+                        "EcsSecurityGroup",
+                        "GroupId"
+                    ]
+                }
+            }
+        }
+
+    },
+    "Outputs": {
+        "EcsCluster": {
+            "Description": "Ecs Cluster reference",
+            "Value": {
+                "Ref": "EcsCluster"
+            }
+        },
+
+        "EcsServiceRole": {
+            "Description": "Ecs Service Role reference",
+            "Value": {
+                "Ref": "EcsServiceRole"
+            }
+        }
+    }
+}

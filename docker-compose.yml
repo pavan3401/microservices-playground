@@ -1,0 +1,36 @@
+webapp:
+  container_name: webapp
+  restart: always
+  dns: 8.8.8.8
+  ports:
+    - "8080:8080"
+  build: webapp
+  links:
+    - weather-service
+  external_links:
+    - eureka-server
+    - config-server
+    - logs
+  environment:
+      EUREKA_INSTANCE_HOSTNAME: webapp
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_CLOUD_CONFIG_DISCOVERY_ENABLED: true
+      SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID: config-server
+      SPRING_PROFILES_ACTIVE: syslog
+weather-service:
+  container_name: weather-service
+  restart: always
+  dns: 8.8.8.8
+  ports:
+    - "8081:8081"
+  build: weather-service
+  external_links:
+    - eureka-server
+    - config-server
+    - logs
+  environment:
+      EUREKA_INSTANCE_HOSTNAME: weather-service
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_CLOUD_CONFIG_DISCOVERY_ENABLED: true
+      SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID: config-server
+      SPRING_PROFILES_ACTIVE: syslog

@@ -1,13 +1,37 @@
+eureka-server:
+  image: egagne/eureka-server
+  dns: 8.8.8.8
+  restart: always
+  ports:
+      - "8761:8761"
+  links:
+    - logs
+  environment:
+      SPRING_PROFILES_ACTIVE: syslog
+config-server:
+  image: egagne/config-server
+  restart: always
+  dns: 8.8.8.8
+  links:
+    - eureka-server
+    - logs
+  environment:
+      EUREKA_INSTANCE_HOSTNAME: config-server
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_PROFILES_ACTIVE: syslog
+logs:
+  container_name: logs
+  restart: always
+  dns: 8.8.8.8
+  build: local-logs
 webapp:
-  container_name: webapp
+  image: egagne/webapp
   restart: always
   dns: 8.8.8.8
   ports:
     - "8080:8080"
-  build: webapp
   links:
     - weather-service
-  external_links:
     - eureka-server
     - config-server
     - logs
@@ -18,13 +42,12 @@ webapp:
       SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID: config-server
       SPRING_PROFILES_ACTIVE: syslog
 weather-service:
-  container_name: weather-service
+  image: egagne/weather-service
   restart: always
   dns: 8.8.8.8
   ports:
     - "8081:8081"
-  build: weather-service
-  external_links:
+  links:
     - eureka-server
     - config-server
     - logs
@@ -34,3 +57,5 @@ weather-service:
       SPRING_CLOUD_CONFIG_DISCOVERY_ENABLED: true
       SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID: config-server
       SPRING_PROFILES_ACTIVE: syslog
+
+

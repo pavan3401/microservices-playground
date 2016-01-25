@@ -97,6 +97,13 @@
             "Type": "AWS::ECS::Cluster"
         },
 
+        "ecs": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+                "RetentionInDays": 7
+            }
+        },
+
         "EcsClusterAutoScalingGroup": {
             "Type": "AWS::AutoScaling::AutoScalingGroup",
             "Properties": {

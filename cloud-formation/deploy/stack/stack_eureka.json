@@ -37,12 +37,12 @@
 
         "EcsServiceRole" : {
             "Description" : "Ecs Service Role",
-            "Type": "AWS::IAM::Role"
+            "Type": "String"
         },
 
         "EcsCluster" : {
             "Description" : "Ecs Cluster",
-            "Type": "AWS::ECS::Cluster"
+            "Type": "String"
         }
 
     },
@@ -111,7 +111,7 @@
                     },
                     {
                         "Name": "logs",
-                        "Image": "kanicz/ecs-cloudwatch-logs",
+                        "Image": "egagne/ecs-cloudwatch-logs",
                         "Memory": "64",
                         "MountPoints": [
                             {

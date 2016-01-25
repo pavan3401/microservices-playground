@@ -79,6 +79,14 @@
             "Default" : "t2.micro",
             "AllowedValues" : [ "t1.micro","m1.small","m1.medium", "t2.micro","t2.small","t2.medium"],
             "ConstraintDescription" : "must be a valid EC2 instance type."
+        },
+
+        "NATInstanceType": {
+            "Description": "NAT instance type",
+            "Type": "String",
+            "Default": "t2.micro",
+            "AllowedValues": [ "t2.micro", "t2.small", "t2.medium" ],
+            "ConstraintDescription": "must be a valid EC2 instance type."
         }
 
     },
@@ -110,6 +118,10 @@
             "us-east-1"      : { "64HVM" : "ami-60b6c60a" }
         },
 
+        "NATInstanceBaseAMI" : {
+            "us-east-1"      : { "64HVM" : "ami-184dc970" }
+        },
+
         "RegionZone" : {
             "us-east-1"     : {"AZ1" : "us-east-1a", "AZ2" : "us-east-1c", "AZ3" : "us-east-1d"},
             "us-west-1"     : {"AZ1" : "us-west-1a", "AZ2" : "us-west-1b", "AZ3" : "us-west-1c"},
@@ -117,14 +129,14 @@
         },
 
         "SubnetConfig" : {
-            "VPC" : { "CIDR" : "172.17.0.0/20" },
-            "DMZ" : { "CIDR" : "172.17.10.0/27" },
-            "AppPublic1": { "CIDR": "172.17.0.0/24"},
-            "AppPublic2": { "CIDR": "172.17.1.0/24" },
-            "AppPublic3": { "CIDR": "172.17.2.0/24" },
-            "AppInt1": { "CIDR": "172.17.2.0/24" },
-            "AppInt2": { "CIDR": "172.17.3.0/24" },
-            "AppInt3": { "CIDR": "172.17.4.0/24" }
+            "VPC" :         { "CIDR": "172.17.0.0/20" },
+            "DMZ" :         { "CIDR": "172.17.10.0/27" },
+            "AppPublic1":   { "CIDR": "172.17.0.0/24"},
+            "AppPublic2":   { "CIDR": "172.17.1.0/24" },
+            "AppPublic3":   { "CIDR": "172.17.3.0/24" },
+            "AppInt1":      { "CIDR": "172.17.4.0/24" },
+            "AppInt2":      { "CIDR": "172.17.5.0/24" },
+            "AppInt3":      { "CIDR": "172.17.6.0/24" }
         }
     },
 
@@ -268,12 +280,78 @@
             }
         },
 
+        "NATRouteTable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {"Ref": "VPC" },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "Environment"
+                                    },
+                                    "-NATRouteTable"
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "Key": "Application",
+                        "Value": {
+                            "Ref": "AWS::StackName"
+                        }
+                    },
+                    {
+                        "Key": "Network",
+                        "Value": "Private"
+                    }
+                ]
+            }
+        },
+
+        "NATRoute": {
+            "Type": "AWS::EC2::Route",
+            "Properties": {
+                "RouteTableId": {"Ref": "NATRouteTable" },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "NetworkInterfaceId": { "Ref": "NATENI" }
+            }
+        },
+
+        "NATRouteTableAssociationApp1": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": { "Ref": "AppInternalSubnet1" },
+                "RouteTableId": { "Ref": "NATRouteTable" }
+            }
+        },
+
+        "NATRouteTableAssociationApp2": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": { "Ref": "AppInternalSubnet2" },
+                "RouteTableId": { "Ref": "NATRouteTable" }
+            }
+        },
+
+        "NATRouteTableAssociationApp3": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": { "Ref": "AppInternalSubnet3" },
+                "RouteTableId": { "Ref": "NATRouteTable" }
+            }
+        },
+
         "NetworkAclApp" : {
             "Type" : "AWS::EC2::NetworkAcl",
             "Properties" : {
                 "VpcId" : { "Ref" : "VPC" },
                 "Tags" : [
-                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [{ "Ref" : "Environment"}, "-EurekaAcl"]]} },
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [{ "Ref" : "Environment"}, "-AppAcl"]]} },
                     { "Key" : "Log", "Value" : { "Ref" : "AWS::StackId" } } ]
             }
         },
@@ -323,30 +401,6 @@
                 "RuleAction" : "allow",
                 "Egress" : "false",
                 "CidrBlock" : "0.0.0.0/0"
-            }
-        },
-
-        "RouteTableAssociationApp1" : {
-            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
-            "Properties" : {
-                "SubnetId" : { "Ref" : "AppInternalSubnet1" },
-                "RouteTableId" : { "Ref" : "PublicRouteTable" }
-            }
-        },
-
-        "RouteTableAssociationApp2" : {
-            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
-            "Properties" : {
-                "SubnetId" : { "Ref" : "AppInternalSubnet2" },
-                "RouteTableId" : { "Ref" : "PublicRouteTable" }
-            }
-        },
-
-        "RouteTableAssociationApp3" : {
-            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
-            "Properties" : {
-                "SubnetId" : { "Ref" : "AppInternalSubnet3" },
-                "RouteTableId" : { "Ref" : "PublicRouteTable" }
             }
         },
 
@@ -434,6 +488,168 @@
             }
         },
 
+        "NATInstance": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "ImageId" : { "Fn::FindInMap" : [ "NATInstanceBaseAMI", { "Ref" : "AWS::Region" },
+                    { "Fn::FindInMap" : [ "AWSInstanceType2Arch", { "Ref" : "NATInstanceType" },
+                        "Arch" ] } ] },
+                "AvailabilityZone": {
+                    "Fn::GetAtt": [
+                        "DMZSubnet",
+                        "AvailabilityZone"
+                    ]
+                },
+                "SourceDestCheck": "false",
+                "Monitoring": "false",
+                "NetworkInterfaces": [
+                    {
+                        "NetworkInterfaceId": {
+                            "Ref": "NATENI"
+                        },
+                        "DeviceIndex": "0"
+                    }
+                ],
+                "InstanceType": {
+                    "Ref": "NATInstanceType"
+                },
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash\n",
+                                "yum upgrade -y\n"
+                            ]
+                        ]
+                    }
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "Environment"
+                                    },
+                                    "-NatGW"
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+
+        "NATSecGrp": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Allow outgoing NATed traffic from ECS Instances subnets",
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "0",
+                        "ToPort": "65535",
+                        "SourceSecurityGroupId": {
+                            "Ref": "EcsSecurityGroup"
+                        }
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "22",
+                        "ToPort": "22",
+                        "SourceSecurityGroupId": {
+                            "Ref": "BastionSecGrp"
+                        }
+                    }
+                ],
+                "SecurityGroupEgress" : [
+                    { "IpProtocol" : "-1", "FromPort" : "0", "ToPort" : "65535", "CidrIp" : "0.0.0.0/0" } ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "Environment"
+                                    },
+                                    "-NatGW"
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+
+        "NATENI": {
+            "Type": "AWS::EC2::NetworkInterface",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "DMZSubnet"
+                },
+                "Description": "NAT Gateway ENI",
+                "GroupSet": [
+                    {
+                        "Ref": "NATSecGrp"
+                    }
+                ],
+                "SourceDestCheck": "false",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "Environment"
+                                    },
+                                    "-NatGW"
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "Key": "role",
+                        "Value": "nat"
+                    }
+                ]
+            }
+        },
+
+        "NATEIP": {
+            "Type": "AWS::EC2::EIP",
+            "Properties": {
+                "Domain": "vpc"
+            }
+        },
+
+        "NATEIPAssociation": {
+            "Type": "AWS::EC2::EIPAssociation",
+            "DependsOn": [
+                "NATInstance"
+            ],
+            "Properties": {
+                "AllocationId": {
+                    "Fn::GetAtt": [
+                        "NATEIP",
+                        "AllocationId"
+                    ]
+                },
+                "NetworkInterfaceId": {
+                    "Ref": "NATENI"
+                }
+            }
+        },
+
         "EurekaServerLoadBalancerSecurityGroup": {
             "Type": "AWS::EC2::SecurityGroup",
             "Properties": {
@@ -470,6 +686,69 @@
                     "FromPort": "80",
                     "ToPort": "80",
                     "CidrIp": "0.0.0.0/0"
+                }
+            }
+        },
+
+        "EcsSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "GroupDescription": "Ecs security group",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Ecs security group"
+                    }
+                ],
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "22",
+                        "ToPort": "22",
+                        "SourceSecurityGroupId": {
+                            "Ref": "BastionSecGrp"
+                        }
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "80",
+                        "ToPort": "80",
+                        "SourceSecurityGroupId": {
+                            "Ref": "WebappLoadBalancerSecurityGroup"
+                        }
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "8761",
+                        "ToPort": "8761",
+                        "SourceSecurityGroupId": {
+                            "Ref": "EurekaServerLoadBalancerSecurityGroup"
+                        }
+                    }
+                ]
+            }
+        },
+
+        "EcsSelfIngress": {
+            "Type": "AWS::EC2::SecurityGroupIngress",
+            "Properties": {
+                "IpProtocol": "tcp",
+                "FromPort": "0",
+                "ToPort": "65535",
+                "SourceSecurityGroupId": {
+                    "Fn::GetAtt": [
+                        "EcsSecurityGroup",
+                        "GroupId"
+                    ]
+                },
+                "GroupId": {
+                    "Fn::GetAtt": [
+                        "EcsSecurityGroup",
+                        "GroupId"
+                    ]
                 }
             }
         },
@@ -612,7 +891,7 @@
 
         "EcsInfrastructure" : {
             "Type" : "AWS::CloudFormation::Stack",
-            "DependsOn" : "BastionInstance",
+            "DependsOn" : "NATInstance",
             "Properties" : {
                 "TemplateURL" : { "Fn::Join" : ["",["https://s3.amazonaws.com/",{"Ref" : "ConfigBucketName"}, "/deploy/stack/stack_ecs.json"]]},
                 "Parameters" : {
@@ -624,7 +903,7 @@
                     "PublicSubnet1Id" : { "Ref" : "PubAppSubnet1"},
                     "PublicSubnet2Id" : { "Ref" : "PubAppSubnet2"},
                     "PublicSubnet3Id" : { "Ref" : "PubAppSubnet3"},
-                    "BastionSecGrp" : { "Ref" : "BastionSecGrp"},
+                    "EcsSecurityGroup" : { "Ref" : "EcsSecurityGroup"},
                     "EurekaServerLoadBalancerSecurityGroup" : { "Ref" : "EurekaServerLoadBalancerSecurityGroup"},
                     "WebappLoadBalancerSecurityGroup" : { "Ref" : "WebappLoadBalancerSecurityGroup"},
                     "VpcId" : { "Ref" : "VPC"}
@@ -661,7 +940,7 @@
                     "PublicSubnet1Id" : { "Ref" : "PubAppSubnet1"},
                     "PublicSubnet2Id" : { "Ref" : "PubAppSubnet2"},
                     "PublicSubnet3Id" : { "Ref" : "PubAppSubnet3"},
-                    "EurekaServerLoadBalancerSecurityGroup" : { "Ref" : "EurekaServerLoadBalancerSecurityGroup"},
+                    "WebappLoadBalancerSecurityGroup" : { "Ref" : "WebappLoadBalancerSecurityGroup"},
                     "EcsCluster" : { "Fn::GetAtt" : [ "EcsInfrastructure", "Outputs.EcsCluster" ] },
                     "EcsServiceRole" : { "Fn::GetAtt" : [ "EcsInfrastructure", "Outputs.EcsServiceRole" ] },
                     "EurekaUrl" : { "Fn::GetAtt" : [ "EurekaServers", "Outputs.EurekaUrl" ] }

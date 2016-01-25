@@ -6,7 +6,7 @@
     "Mappings": {
         "RegionMap": {
             "us-east-1": {
-                "AMI": "ami-9886a0f2"
+                "AMI": "ami-2b3b6041"
             },
             "us-west-1": {
                 "AMI": "ami-caf581aa"
@@ -70,8 +70,8 @@
             "Type": "AWS::EC2::KeyPair::KeyName"
         },
 
-        "BastionSecGrp" : {
-            "Description" : "Bastion Security Group",
+        "EcsSecurityGroup" : {
+            "Description" : "ECS Security Group",
             "Type" : "String"
         },
 
@@ -414,69 +414,6 @@
                         "Ref": "EcsIamRole"
                     }
                 ]
-            }
-        },
-
-        "EcsSecurityGroup": {
-            "Type": "AWS::EC2::SecurityGroup",
-            "Properties": {
-                "VpcId": {
-                    "Ref": "VpcId"
-                },
-                "GroupDescription": "Ecs security group",
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": "Ecs security group"
-                    }
-                ],
-                "SecurityGroupIngress": [
-                    {
-                        "IpProtocol": "tcp",
-                        "FromPort": "22",
-                        "ToPort": "22",
-                        "SourceSecurityGroupId": {
-                            "Ref": "BastionSecGrp"
-                        }
-                    },
-                    {
-                        "IpProtocol": "tcp",
-                        "FromPort": "80",
-                        "ToPort": "80",
-                        "SourceSecurityGroupId": {
-                            "Ref": "WebappLoadBalancerSecurityGroup"
-                        }
-                    },
-                    {
-                        "IpProtocol": "tcp",
-                        "FromPort": "8761",
-                        "ToPort": "8761",
-                        "SourceSecurityGroupId": {
-                            "Ref": "EurekaServerLoadBalancerSecurityGroup"
-                        }
-                    }
-                ]
-            }
-        },
-
-        "EcsSelfIngress": {
-            "Type": "AWS::EC2::SecurityGroupIngress",
-            "Properties": {
-                "IpProtocol": "tcp",
-                "FromPort": "0",
-                "ToPort": "65535",
-                "SourceSecurityGroupId": {
-                    "Fn::GetAtt": [
-                        "EcsSecurityGroup",
-                        "GroupId"
-                    ]
-                },
-                "GroupId": {
-                    "Fn::GetAtt": [
-                        "EcsSecurityGroup",
-                        "GroupId"
-                    ]
-                }
             }
         }
 

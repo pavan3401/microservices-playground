@@ -37,12 +37,12 @@
 
         "EcsServiceRole" : {
             "Description" : "Ecs Service Role",
-            "Type": "AWS::IAM::Role"
+            "Type": "String"
         },
 
         "EcsCluster" : {
             "Description" : "Ecs Cluster",
-            "Type": "AWS::ECS::Cluster"
+            "Type": "String"
         },
 
         "EurekaUrl" : {
@@ -143,7 +143,7 @@
                     },
                     {
                         "Name": "logs",
-                        "Image": "kanicz/ecs-cloudwatch-logs",
+                        "Image": "egagne/ecs-cloudwatch-logs",
                         "Memory": "64",
                         "MountPoints": [
                             {
@@ -242,7 +242,7 @@
                     },
                     {
                         "Name": "logs",
-                        "Image": "kanicz/ecs-cloudwatch-logs",
+                        "Image": "egagne/ecs-cloudwatch-logs",
                         "Memory": "64",
                         "MountPoints": [
                             {
@@ -282,7 +282,7 @@
                 "ContainerDefinitions": [
                     {
                         "Name": "config-server",
-                        "Image": "kanicz/microservices-config-server",
+                        "Image": "egagne/microservices-config-server",
                         "Memory": "1024",
                         "Environment": [
                             {
@@ -321,7 +321,7 @@
                     },
                     {
                         "Name": "logs",
-                        "Image": "kanicz/ecs-cloudwatch-logs",
+                        "Image": "egagne/ecs-cloudwatch-logs",
                         "Memory": "64",
                         "MountPoints": [
                             {

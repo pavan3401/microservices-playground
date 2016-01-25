@@ -18,5 +18,6 @@ This is a simple weather app. It demonstrates solutions for common microservice 
 3. Run webapp and weather service:
 ```docker-compose --file docker-compose.yml up```
 
-### Running on EC2 Container Service
-Create CloudFormation stack from /cloud-formation/deploy/stack/create-deployment.sh
+### Running on EC2 Container Service (Create CloudFormation stack):
+cd ./cloud-formation/deploy/
+sh ./create-deployment.sh

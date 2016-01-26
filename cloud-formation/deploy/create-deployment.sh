@@ -2,7 +2,16 @@
 
 echo -e "\n\n------  This script will create a deployment for a Microservice test AWS cloud environment ------"
 
+USAGE="usage: ./create-deployment.sh bucketName keyName"
+if [ "$#" -lt 2 ] ; then
+  echo $USAGE
+  exit 1
+fi
+
 ENV=microservice-test
+BUCKET_NAME=$1
+KEY_NAME=$2
+
 
 ## Function to check if the stack creation succeeded. If after x number of minutes it's not successful, we give up and exit 1
 ## Parameters:
@@ -53,21 +62,21 @@ STACK_NAME=$ENV-`date +%m-%d-%y-%H%M`
 RELEASE=test
 
 # Upload on S3
-aws s3 cp ./stack/ s3://eliza-eureka/deploy/stack/ --recursive --grants read=uri=http://acs.amazonaws.com/groups/global/AuthenticatedUsers
+aws s3 cp ./stack/ s3://$BUCKET_NAME/deploy/stack/ --recursive --grants read=uri=http://acs.amazonaws.com/groups/global/AuthenticatedUsers
 
 
 # Create Stack in AWS
 echo "Create : "$STACK_NAME
 echo $ENV
 echo "Create Stack "$STACK_NAME"\n"
-aws cloudformation create-stack --stack-name $STACK_NAME --template-url  https://s3.amazonaws.com/eliza-eureka/deploy/stack/stack_main.json \
---parameters ParameterKey=KeyName,ParameterValue=eureka \
+aws cloudformation create-stack --stack-name $STACK_NAME --template-url  https://s3.amazonaws.com/$BUCKET_NAME/deploy/stack/stack_main.json \
+--parameters ParameterKey=KeyName,ParameterValue=$KEY_NAME \
 ParameterKey=Release,ParameterValue=$RELEASE \
 ParameterKey=Environment,ParameterValue=$ENV --capabilities CAPABILITY_IAM --disable-rollback
 
 # Check Stack Status
 COMMAND="aws cloudformation describe-stacks --stack-name $STACK_NAME | jq  '.Stacks[0].StackStatus' |  cut -d \"\\\"\" -f2"
-checkStackStatus "create stack" "CREATE_COMPLETE" 25 "$COMMAND"
+checkStackStatus "create stack" "CREATE_COMPLETE" 45 "$COMMAND"
 
 echo "Stack created... displaying info"
 aws cloudformation describe-stacks --stack-name $STACK_NAME

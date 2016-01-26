@@ -1,8 +1,8 @@
 #!/bin/bash
 
-USAGE="usage: sh update-deployment.sh releaseVersion#"
-EXAMPLE="sh update-deployment.sh 2"
-if [ "$#" -lt 1 ] ; then
+USAGE="usage: sh update-deployment.sh releaseVersion#  bucketName keyName"
+EXAMPLE="./update-deployment.sh 2 eliza-eureka eureka"
+if [ "$#" -lt 3 ] ; then
   echo $USAGE
   echo $EXAMPLE
   exit 1
@@ -10,7 +10,10 @@ fi
 
 ENV=microservice-test
 RELEASE=test$1
+BUCKET_NAME=$2
+KEY_NAME=$3
 STACK_NAME=`aws cloudformation describe-stacks | jq --arg tag $ENV '.Stacks[] | select (.StackName | contains($tag)) | .StackName' | cut -d"\"" -f2`
+
 
 # Function to check if the stack update/create succeeded. If after x number of minutes it's not successful, we give up and exit 1
 # Parameters:
@@ -53,13 +56,13 @@ fi
 
 
 # Upload on S3
-aws s3 cp ./stack/ s3://eliz-eureka/deploy/stack/ --grants read=uri=http://acs.amazonaws.com/groups/global/AuthenticatedUsers
+aws s3 cp ./stack/ s3://$BUCKET_NAME/deploy/stack/ --grants read=uri=http://acs.amazonaws.com/groups/global/AuthenticatedUsers
 
 # Update Stack
 echo -e "\n\n\nThe \""$ENV"\" environement will be updated with version \""$RELEASE"\""
 echo "Updating : "$STACK_NAME
-aws cloudformation update-stack --stack-name $STACK_NAME --template-url https://s3-us-east-1.amazonaws.com/eliz-eureka/deploy/stack/stack_main.json \
---parameters ParameterKey=KeyName,ParameterValue=eureka \
+aws cloudformation update-stack --stack-name $STACK_NAME --template-url https://s3-us-east-1.amazonaws.com/$BUCKET_NAME/deploy/stack/stack_main.json \
+--parameters ParameterKey=KeyName,ParameterValue=$KEY_NAME \
 ParameterKey=Release,ParameterValue=$RELEASE \
 ParameterKey=Environment,ParameterValue=$ENV --capabilities CAPABILITY_IAM
 

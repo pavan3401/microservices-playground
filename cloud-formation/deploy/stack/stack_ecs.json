@@ -50,21 +50,6 @@
             "Type": "AWS::EC2::Subnet::Id"
         },
 
-        "PublicSubnet1Id": {
-            "Description": "Public subnet 1 id",
-            "Type": "AWS::EC2::Subnet::Id"
-        },
-
-        "PublicSubnet2Id": {
-            "Description": "Public subnet 2 id",
-            "Type": "AWS::EC2::Subnet::Id"
-        },
-
-        "PublicSubnet3Id": {
-            "Description": "Public subnet 3 id",
-            "Type": "AWS::EC2::Subnet::Id"
-        },
-
         "KeyName": {
             "Description": "keypair",
             "Type": "AWS::EC2::KeyPair::KeyName"

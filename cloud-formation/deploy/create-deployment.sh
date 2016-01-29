@@ -2,8 +2,8 @@
 
 echo -e "\n\n------  This script will create a deployment for a Microservice test AWS cloud environment ------"
 
-USAGE="usage: ./create-deployment.sh bucketName keyName"
-if [ "$#" -lt 2 ] ; then
+USAGE="usage: ./create-deployment.sh <bucketName> <keyName> <hostedZoneName>"
+if [ "$#" -lt 3 ] ; then
   echo $USAGE
   exit 1
 fi
@@ -11,6 +11,7 @@ fi
 ENV=microservice-test
 BUCKET_NAME=$1
 KEY_NAME=$2
+HOSTED_ZONE_NAME=$3
 
 
 ## Function to check if the stack creation succeeded. If after x number of minutes it's not successful, we give up and exit 1
@@ -61,7 +62,7 @@ echo -e "\n\n\nThe \""$ENV"\" environment will be created."
 STACK_NAME=$ENV-`date +%m-%d-%y-%H%M`
 RELEASE=test
 
-# Upload on S3
+# Upload on S3 the templates
 aws s3 cp ./stack/ s3://$BUCKET_NAME/deploy/stack/ --recursive --grants read=uri=http://acs.amazonaws.com/groups/global/AuthenticatedUsers
 
 
@@ -72,6 +73,8 @@ echo "Create Stack "$STACK_NAME"\n"
 aws cloudformation create-stack --stack-name $STACK_NAME --template-url  https://s3.amazonaws.com/$BUCKET_NAME/deploy/stack/stack_main.json \
 --parameters ParameterKey=KeyName,ParameterValue=$KEY_NAME \
 ParameterKey=Release,ParameterValue=$RELEASE \
+ParameterKey=AccountNumber,ParameterValue=$AWS_ACCOUNT_NUMBER \
+ParameterKey=HostedZone,ParameterValue=$HOSTED_ZONE_NAME \
 ParameterKey=Environment,ParameterValue=$ENV --capabilities CAPABILITY_IAM --disable-rollback
 
 # Check Stack Status
@@ -80,6 +83,3 @@ checkStackStatus "create stack" "CREATE_COMPLETE" 45 "$COMMAND"
 
 echo "Stack created... displaying info"
 aws cloudformation describe-stacks --stack-name $STACK_NAME
-
-
-

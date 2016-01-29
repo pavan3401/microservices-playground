@@ -43,6 +43,11 @@
         "EcsCluster" : {
             "Description" : "Ecs Cluster",
             "Type": "String"
+        },
+
+        "AccountNumber": {
+            "Description": "Amazon Account Number",
+            "Type": "String"
         }
 
     },
@@ -91,7 +96,7 @@
                 "ContainerDefinitions": [
                     {
                         "Name": "eureka-server",
-                        "Image": "egagne/eureka-server",
+                        "Image": { "Fn::Join" : ["", [{ "Ref" : "AccountNumber" }, ".dkr.ecr.us-east-1.amazonaws.com/microservices/eureka-server:latest"]]},
                         "Memory": "1024",
                         "Environment": [
                             {

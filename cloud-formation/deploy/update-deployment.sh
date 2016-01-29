@@ -64,6 +64,7 @@ echo "Updating : "$STACK_NAME
 aws cloudformation update-stack --stack-name $STACK_NAME --template-url https://s3-us-east-1.amazonaws.com/$BUCKET_NAME/deploy/stack/stack_main.json \
 --parameters ParameterKey=KeyName,ParameterValue=$KEY_NAME \
 ParameterKey=Release,ParameterValue=$RELEASE \
+ParameterKey=AmazonAccount,ParameterValue=$AWS_ACCOUNT_NUMBER \
 ParameterKey=Environment,ParameterValue=$ENV --capabilities CAPABILITY_IAM
 
 # Verify Status

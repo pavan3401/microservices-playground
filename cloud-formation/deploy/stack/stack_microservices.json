@@ -48,6 +48,11 @@
         "EurekaUrl" : {
             "Description" : "Eureka Servers LoadBalancer Url",
             "Type" : "String"
+        },
+
+        "AccountNumber": {
+            "Description": "Amazon Account Number",
+            "Type": "String"
         }
     },
 
@@ -96,7 +101,7 @@
                 "ContainerDefinitions": [
                     {
                         "Name": "webapp",
-                        "Image": "egagne/webapp",
+                        "Image": { "Fn::Join" : ["", [{ "Ref" : "AccountNumber" }, ".dkr.ecr.us-east-1.amazonaws.com/microservices/webapp:latest"]]},
                         "Memory": "1024",
                         "Environment": [
                             {
@@ -143,7 +148,7 @@
                     },
                     {
                         "Name": "logs",
-                        "Image": "egagne/ecs-cloudwatch-logs",
+                        "Image": { "Fn::Join" : ["", [{ "Ref" : "AccountNumber" }, ".dkr.ecr.us-east-1.amazonaws.com/microservices/ecs-cloudwatch-logs:latest"]]},
                         "Memory": "64",
                         "MountPoints": [
                             {
@@ -195,7 +200,7 @@
                 "ContainerDefinitions": [
                     {
                         "Name": "service",
-                        "Image": "egagne/weather-service",
+                        "Image": { "Fn::Join" : ["", [{ "Ref" : "AccountNumber" }, ".dkr.ecr.us-east-1.amazonaws.com/microservices/weather-service:latest"]]},
                         "Memory": "1024",
                         "Environment": [
                             {
@@ -242,7 +247,7 @@
                     },
                     {
                         "Name": "logs",
-                        "Image": "egagne/ecs-cloudwatch-logs",
+                        "Image": { "Fn::Join" : ["", [{ "Ref" : "AccountNumber" }, ".dkr.ecr.us-east-1.amazonaws.com/microservices/ecs-cloudwatch-logs:latest"]]},
                         "Memory": "64",
                         "MountPoints": [
                             {
@@ -282,7 +287,7 @@
                 "ContainerDefinitions": [
                     {
                         "Name": "config-server",
-                        "Image": "egagne/microservices-config-server",
+                        "Image": { "Fn::Join" : ["", [{ "Ref" : "AccountNumber" }, ".dkr.ecr.us-east-1.amazonaws.com/microservices/config-server:latest"]]},
                         "Memory": "1024",
                         "Environment": [
                             {
@@ -321,7 +326,7 @@
                     },
                     {
                         "Name": "logs",
-                        "Image": "egagne/ecs-cloudwatch-logs",
+                        "Image": { "Fn::Join" : ["", [{ "Ref" : "AccountNumber" }, ".dkr.ecr.us-east-1.amazonaws.com/microservices/ecs-cloudwatch-logs:latest"]]},
                         "Memory": "64",
                         "MountPoints": [
                             {
@@ -362,6 +367,24 @@
                 "Fn::GetAtt": [
                     "WebappLoadBalancer",
                     "DNSName"
+                ]
+            }
+        },
+        "WebappLoadBalancerHostZoneNameId": {
+            "Description": "Webapp Load Balancer Host Zone Name ID",
+            "Value": {
+                "Fn::GetAtt": [
+                    "WebappLoadBalancer",
+                    "CanonicalHostedZoneNameID"
+                ]
+            }
+        },
+        "WebappLoadBalancerHostZoneName": {
+            "Description": "Webapp Load Balancer Host Zone Name",
+            "Value": {
+                "Fn::GetAtt": [
+                    "WebappLoadBalancer",
+                    "CanonicalHostedZoneName"
                 ]
             }
         }

@@ -87,6 +87,24 @@
             "Default": "t2.micro",
             "AllowedValues": [ "t2.micro", "t2.small", "t2.medium" ],
             "ConstraintDescription": "must be a valid EC2 instance type."
+        },
+
+        "AccountNumber": {
+            "Description": "Amazon Account Number",
+            "Type": "String",
+            "AllowedPattern" : "^[0-9]{12}",
+            "ConstraintDescription": "must be a valid Account Number."
+        },
+
+        "AppUrl": {
+            "Description": "The application url",
+            "Type": "String",
+            "Default": "microservices-test"
+        },
+
+        "HostedZone": {
+            "Description": "Domain used for route 53",
+            "Type": "String"
         }
 
     },
@@ -222,6 +240,7 @@
 
         "AttachGateway" : {
             "Type" : "AWS::EC2::VPCGatewayAttachment",
+            "DependsOn": [ "InternetGateway" ],
             "Properties" : {
                 "VpcId" : { "Ref" : "VPC" },
                 "InternetGatewayId" : { "Ref" : "InternetGateway" }
@@ -241,6 +260,7 @@
 
         "PublicRoute" : {
             "Type" : "AWS::EC2::Route",
+            "DependsOn": [ "AttachGateway" ],
             "Properties" : {
                 "RouteTableId" : { "Ref" : "PublicRouteTable" },
                 "DestinationCidrBlock" : "0.0.0.0/0",
@@ -490,6 +510,7 @@
 
         "NATInstance": {
             "Type": "AWS::EC2::Instance",
+            "DependsOn": [ "AttachGateway" ],
             "Properties": {
                 "ImageId" : { "Fn::FindInMap" : [ "NATInstanceBaseAMI", { "Ref" : "AWS::Region" },
                     { "Fn::FindInMap" : [ "AWSInstanceType2Arch", { "Ref" : "NATInstanceType" },
@@ -627,6 +648,7 @@
 
         "NATEIP": {
             "Type": "AWS::EC2::EIP",
+            "DependsOn": [ "AttachGateway" ],
             "Properties": {
                 "Domain": "vpc"
             }
@@ -766,6 +788,7 @@
 
         "BastionEIP" : {
             "Type" : "AWS::EC2::EIP",
+            "DependsOn": [ "AttachGateway" ],
             "Properties" : {
                 "Domain" : "vpc"
             }
@@ -781,6 +804,7 @@
 
         "BastionInstance" : {
             "Type" : "AWS::EC2::Instance",
+            "DependsOn": [ "AttachGateway" ],
             "Metadata" : {
                 "BuildNumber" : { "Ref" : "Release" },
 
@@ -891,7 +915,7 @@
 
         "EcsInfrastructure" : {
             "Type" : "AWS::CloudFormation::Stack",
-            "DependsOn" : "NATInstance",
+            "DependsOn" : ["NATInstance", "AttachGateway"],
             "Properties" : {
                 "TemplateURL" : { "Fn::Join" : ["",["https://s3.amazonaws.com/",{"Ref" : "ConfigBucketName"}, "/deploy/stack/stack_ecs.json"]]},
                 "Parameters" : {
@@ -900,12 +924,12 @@
                     "PrivateSubnet1Id" : { "Ref" : "AppInternalSubnet1" },
                     "PrivateSubnet2Id" : { "Ref" : "AppInternalSubnet2" },
                     "PrivateSubnet3Id" : { "Ref" : "AppInternalSubnet3" },
-                    "PublicSubnet1Id" : { "Ref" : "PubAppSubnet1"},
-                    "PublicSubnet2Id" : { "Ref" : "PubAppSubnet2"},
-                    "PublicSubnet3Id" : { "Ref" : "PubAppSubnet3"},
-                    "EcsSecurityGroup" : { "Ref" : "EcsSecurityGroup"},
-                    "EurekaServerLoadBalancerSecurityGroup" : { "Ref" : "EurekaServerLoadBalancerSecurityGroup"},
-                    "WebappLoadBalancerSecurityGroup" : { "Ref" : "WebappLoadBalancerSecurityGroup"},
+                    "PublicSubnet1Id" : { "Ref" : "PubAppSubnet1" },
+                    "PublicSubnet2Id" : { "Ref" : "PubAppSubnet2" },
+                    "PublicSubnet3Id" : { "Ref" : "PubAppSubnet3" },
+                    "EcsSecurityGroup" : { "Ref" : "EcsSecurityGroup" },
+                    "EurekaServerLoadBalancerSecurityGroup" : { "Ref" : "EurekaServerLoadBalancerSecurityGroup" },
+                    "WebappLoadBalancerSecurityGroup" : { "Ref" : "WebappLoadBalancerSecurityGroup" },
                     "VpcId" : { "Ref" : "VPC"}
                 }
             }
@@ -919,12 +943,13 @@
                 "Parameters" : {
                     "KeyName" : { "Ref" : "KeyName" },
                     "Environment" : { "Ref" : "Environment" },
-                    "PublicSubnet1Id" : { "Ref" : "PubAppSubnet1"},
-                    "PublicSubnet2Id" : { "Ref" : "PubAppSubnet2"},
-                    "PublicSubnet3Id" : { "Ref" : "PubAppSubnet3"},
-                    "EurekaServerLoadBalancerSecurityGroup" : { "Ref" : "EurekaServerLoadBalancerSecurityGroup"},
+                    "PublicSubnet1Id" : { "Ref" : "PubAppSubnet1" },
+                    "PublicSubnet2Id" : { "Ref" : "PubAppSubnet2" },
+                    "PublicSubnet3Id" : { "Ref" : "PubAppSubnet3" },
+                    "EurekaServerLoadBalancerSecurityGroup" : { "Ref" : "EurekaServerLoadBalancerSecurityGroup" },
                     "EcsCluster" : { "Fn::GetAtt" : [ "EcsInfrastructure", "Outputs.EcsCluster" ] },
-                    "EcsServiceRole" : { "Fn::GetAtt" : [ "EcsInfrastructure", "Outputs.EcsServiceRole" ] }
+                    "EcsServiceRole" : { "Fn::GetAtt" : [ "EcsInfrastructure", "Outputs.EcsServiceRole" ] },
+                    "AccountNumber" : { "Ref" : "AccountNumber" }
                 }
             }
         },
@@ -943,10 +968,29 @@
                     "WebappLoadBalancerSecurityGroup" : { "Ref" : "WebappLoadBalancerSecurityGroup"},
                     "EcsCluster" : { "Fn::GetAtt" : [ "EcsInfrastructure", "Outputs.EcsCluster" ] },
                     "EcsServiceRole" : { "Fn::GetAtt" : [ "EcsInfrastructure", "Outputs.EcsServiceRole" ] },
-                    "EurekaUrl" : { "Fn::GetAtt" : [ "EurekaServers", "Outputs.EurekaUrl" ] }
+                    "EurekaUrl" : { "Fn::GetAtt" : [ "EurekaServers", "Outputs.EurekaUrl" ] },
+                    "AccountNumber" : { "Ref" : "AccountNumber" }
                 }
             }
+        },
+
+        "StackDNSRecords" : {
+            "Type" : "AWS::Route53::RecordSetGroup",
+            "DependsOn" : [ "Microservices" ],
+            "Properties" : {
+                "HostedZoneName" : { "Fn::Join" : [ "", [{"Ref" : "HostedZone"}, "." ]]},
+                "RecordSets" : [
+                    {
+                        "Name" : { "Fn::Join" : [ "", [{"Ref" : "AppUrl"},".",{"Ref" : "HostedZone"}, "." ]]},
+                        "Type" : "A",
+                        "AliasTarget" : {
+                            "HostedZoneId" : { "Fn::GetAtt" : ["Microservices", "Outputs.WebappLoadBalancerHostZoneNameId"] },
+                            "DNSName" : { "Fn::GetAtt" : ["Microservices","Outputs.WebappLoadBalancerHostZoneName"] }}
+                    }
+                ]
+            }
         }
+
     },
 
     "Outputs" : {

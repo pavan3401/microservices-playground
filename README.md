@@ -8,16 +8,20 @@ This is a simple weather app. It demonstrates solutions for common microservice 
 
 ## Supported deployment scenarios:
 - dev environment with docker compose
-- EC2 Container Service
+- EC2 Container Service + ECR
 
 ### Running locally with docker compose
-1. Build fat jars:
+1. Build jars and docker containers:
 ```mvn clean package install```
-2. Run eureka-server and config-server:
-```docker-compose --file docker-compose-deps.yml up```
-3. Run webapp and weather service:
-```docker-compose --file docker-compose.yml up```
+2. Run eureka-server, config-server, webapp and weather-service
+```docker-compose up```
 
 ### Running on EC2 Container Service (Create CloudFormation stack):
-cd ./cloud-formation/deploy/
-sh ./create-deployment.sh
+1. Build jars and docker containers:
+```mvn clean package install```
+2. Create S3 Bucket, ECR repositories and push containers to them
+```cd ./cloud-formation/deploy/```
+```sh ./pre-configure.sh <bucketName>
+3. Create AWS resources and deploy containers in ECS cluster
+```cd ./cloud-formation/deploy/```
+```sh ./create-deployment.sh <bucketName> <keyName> <hostedZoneName>```

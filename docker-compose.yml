@@ -1,5 +1,5 @@
 eureka-server:
-  image: egagne/eureka-server
+  image: microservices/eureka-server
   dns: 8.8.8.8
   restart: always
   ports:
@@ -9,7 +9,7 @@ eureka-server:
   environment:
       SPRING_PROFILES_ACTIVE: syslog
 config-server:
-  image: egagne/config-server
+  image: microservices/config-server
   restart: always
   dns: 8.8.8.8
   links:
@@ -25,7 +25,7 @@ logs:
   dns: 8.8.8.8
   build: local-logs
 webapp:
-  image: egagne/webapp
+  image: microservices/webapp
   restart: always
   dns: 8.8.8.8
   ports:
@@ -42,7 +42,7 @@ webapp:
       SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID: config-server
       SPRING_PROFILES_ACTIVE: syslog
 weather-service:
-  image: egagne/weather-service
+  image: microservices/weather-service
   restart: always
   dns: 8.8.8.8
   ports:

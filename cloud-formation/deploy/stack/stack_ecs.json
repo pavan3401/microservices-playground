@@ -32,7 +32,7 @@
         "ClusterSize": {
             "Description": "ECS Cluster size",
             "Type": "Number",
-            "Default": 4
+            "Default": 5
         },
 
         "PrivateSubnet1Id": {
@@ -390,7 +390,11 @@
                                         "ecs:DeregisterContainerInstance",
                                         "ecs:DiscoverPollEndpoint",
                                         "ecs:Submit*",
-                                        "ecs:Poll"
+                                        "ecs:Poll",
+                                        "ecr:BatchCheckLayerAvailability",
+                                        "ecr:BatchGetImage",
+                                        "ecr:GetDownloadUrlForLayer",
+                                        "ecr:GetAuthorizationToken"
                                     ],
                                     "Resource": "*"
                                 },

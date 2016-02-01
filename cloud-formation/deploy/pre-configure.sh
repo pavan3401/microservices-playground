@@ -9,8 +9,7 @@ fi
 # Global variables
 PROJECT="microservices"
 S3_BUCKET=$1
-#declare -a EXPECTED_REPOSITORIES=("weather-service" "config-server" "eureka-server" "webapp" "ecs-cloudwatch-logs")
-declare -a EXPECTED_REPOSITORIES=("ecs-cloudwatch-logs")
+declare -a EXPECTED_REPOSITORIES=("weather-service" "config-server" "eureka-server" "webapp" "ecs-cloudwatch-logs")
 
 # Find all existing S3 buckets into that AWS account
 findAllExistingS3Buckets()
@@ -103,11 +102,11 @@ loginToECR()
 }
 
 
-#findAllExistingS3Buckets
-#createNecessaryS3Bucket
-#findAllExistingRepositories
-#createNecessaryRepositories
-#createCloudWatchLogsImage
+findAllExistingS3Buckets
+createNecessaryS3Bucket
+findAllExistingRepositories
+createNecessaryRepositories
+createCloudWatchLogsImage
 loginToECR
 tagAndPushLatestImagesToECR
 

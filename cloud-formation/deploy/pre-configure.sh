@@ -2,14 +2,15 @@
 
 USAGE="usage: ./pre-configure.sh <bucketName>"
 if [ "$#" -lt 1 ] ; then
-  echo $USAGE
+  echo "${USAGE}"
   exit 1
 fi
 
 # Global variables
 PROJECT="microservices"
 S3_BUCKET=$1
-declare -a EXPECTED_REPOSITORIES=("weather-service" "config-server" "eureka-server" "webapp" "ecs-cloudwatch-logs")
+#declare -a EXPECTED_REPOSITORIES=("weather-service" "config-server" "eureka-server" "webapp" "ecs-cloudwatch-logs")
+declare -a EXPECTED_REPOSITORIES=("ecs-cloudwatch-logs")
 
 # Find all existing S3 buckets into that AWS account
 findAllExistingS3Buckets()
@@ -20,7 +21,7 @@ findAllExistingS3Buckets()
 # Retrieve all existing ECR Repository into that AWS account
 findAllExistingRepositories()
 {
-    ALL_ECR_REPOSITORIES=$(aws ecr describe-repositories --registry-id $AWS_ACCOUNT_NUMBER | jq '.repositories[].repositoryName' | cut -d'"' -f2)
+    ALL_ECR_REPOSITORIES=$(aws ecr describe-repositories --registry-id "${AWS_ACCOUNT_NUMBER}" | jq '.repositories[].repositoryName' | cut -d'"' -f2)
 }
 
 # Create the necessary S3 Bucket
@@ -32,13 +33,13 @@ createNecessaryS3Bucket()
     esac
 
     if [ "$FOUND" = false ]; then
-        echo "Creating S3 $S3_BUCKET bucket"
-        aws s3api create-bucket --bucket $S3_BUCKET --region $AWS_DEFAULT_REGION --grant-full-control
-        STATUS=`echo $?`
+        echo "Creating S3 ${S3_BUCKET} bucket"
+        aws s3api create-bucket --bucket "${S3_BUCKET}" --region "${AWS_DEFAULT_REGION}" --grant-full-control
+        STATUS=$?
 
-        if [ $STATUS -ne 0 ]; then
-            echo "  ERROR: Creating the S3 Bucket $S3_BUCKET failed."
-            exit $STATUS
+        if [ "${STATUS}" -ne 0 ]; then
+            echo "ERROR: Creating the S3 Bucket ${S3_BUCKET} failed."
+            exit "${STATUS}"
         fi
     fi
 }
@@ -56,14 +57,14 @@ createNecessaryRepositories()
             FOUND=true;;
          esac
 
-         if [ "$FOUND" = false ]; then
-            echo "Creating $REPOSITORY repository"
-            aws ecr create-repository --repository-name $REPOSITORY
-            STATUS=`echo $?`
+         if [ "${FOUND}" = false ]; then
+            echo "Creating ${REPOSITORY} repository"
+            aws ecr create-repository --repository-name "${REPOSITORY}"
+            STATUS=$?
 
-            if [ $STATUS -ne 0 ]; then
-                echo "  ERROR: Creating the ECR Repository $REPOSITORY failed."
-                exit $STATUS
+            if [ "${STATUS}" -ne 0 ]; then
+                echo "ERROR: Creating the ECR Repository ${REPOSITORY} failed."
+                exit "${STATUS}"
             fi
          fi
     done
@@ -82,14 +83,14 @@ tagAndPushLatestImagesToECR()
     echo "Tagging and pushing Latests Images to ECR..."
     for repo in "${EXPECTED_REPOSITORIES[@]}"
     do
-        REPOSITORY=$PROJECT"/"$repo
+        REPOSITORY="${PROJECT}/${repo}"
 
-        echo "Tagging Image $REPOSITORY:latest"
-        TAG=$AWS_ACCOUNT_NUMBER".dkr.ecr.us-east-1.amazonaws.com/"$REPOSITORY":latest"
+        echo "Tagging Image ${REPOSITORY}:latest"
+        TAG="${AWS_ACCOUNT_NUMBER}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${REPOSITORY}:latest"
 
-        echo "Pushing Image $REPOSITORY:latest to ECR repository"
-        docker tag $REPOSITORY":latest" $TAG
-        docker push $TAG
+        echo "Pushing Image ${REPOSITORY}:latest to ECR repository"
+        docker tag "${REPOSITORY}:latest" "${TAG}"
+        docker push "${TAG}"
     done
 }
 
@@ -97,16 +98,16 @@ tagAndPushLatestImagesToECR()
 loginToECR()
 {
     echo "Authenticating to ECR..."
-    LOGIN_CMD=$(aws ecr get-login --region us-east-1)
-    eval $LOGIN_CMD
+    LOGIN_CMD=$(aws ecr get-login --region "${AWS_DEFAULT_REGION}")
+    eval "${LOGIN_CMD}"
 }
 
 
-findAllExistingS3Buckets
-createNecessaryS3Bucket
-findAllExistingRepositories
-createNecessaryRepositories
-createCloudWatchLogsImage
+#findAllExistingS3Buckets
+#createNecessaryS3Bucket
+#findAllExistingRepositories
+#createNecessaryRepositories
+#createCloudWatchLogsImage
 loginToECR
 tagAndPushLatestImagesToECR
 

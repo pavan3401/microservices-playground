@@ -58,6 +58,85 @@
 
     "Resources": {
 
+        "ConfigServerTask": {
+            "Type": "AWS::ECS::TaskDefinition",
+            "Properties": {
+                "ContainerDefinitions": [
+                    {
+                        "Name": "config-server",
+                        "Image": { "Fn::Join" : ["", [{ "Ref" : "AccountNumber" }, ".dkr.ecr.us-east-1.amazonaws.com/microservices/config-server:latest"]]},
+                        "Memory": "1024",
+                        "Environment": [
+                            {
+                                "Name": "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE",
+                                "Value": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "http://",
+                                            {
+                                                "Ref" : "EurekaUrl"
+                                            },
+                                            ":8761/eureka/"
+                                        ]
+                                    ]
+                                }
+                            },
+                            {
+                                "Name": "EUREKA_INSTANCE_HOSTNAME",
+                                "Value": "${local-ipv4:N/A}"
+                            },
+                            {
+                                "Name": "SPRING_PROFILES_ACTIVE",
+                                "Value": "syslog"
+                            }
+                        ],
+                        "PortMappings": [
+                            {
+                                "HostPort": 9000,
+                                "ContainerPort": 9000
+                            }
+                        ],
+                        "Links": [
+                            "logs"
+                        ]
+                    },
+                    {
+                        "Name": "logs",
+                        "Image": { "Fn::Join" : ["", [{ "Ref" : "AccountNumber" }, ".dkr.ecr.us-east-1.amazonaws.com/microservices/ecs-cloudwatch-logs:latest"]]},
+                        "Memory": "64",
+                        "MountPoints": [
+                            {
+                                "SourceVolume": "ecs_instance_logs",
+                                "ContainerPath": "/mnt/ecs_instance_logs"
+                            }
+                        ]
+                    }
+                ],
+                "Volumes": [
+                    {
+                        "Name": "ecs_instance_logs",
+                        "Host": {
+                            "SourcePath": "/var/log"
+                        }
+                    }
+                ]
+            }
+        },
+
+        "ConfigServerService": {
+            "Type": "AWS::ECS::Service",
+            "Properties": {
+                "Cluster": {
+                    "Ref": "EcsCluster"
+                },
+                "DesiredCount": "1",
+                "TaskDefinition": {
+                    "Ref": "ConfigServerTask"
+                }
+            }
+        },
+
         "WebappLoadBalancer": {
             "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
             "Properties": {
@@ -171,6 +250,7 @@
 
         "WebappService": {
             "Type": "AWS::ECS::Service",
+            "DependsOn": [ "ConfigServerService" ],
             "Properties": {
                 "Cluster": {
                     "Ref": "EcsCluster"
@@ -270,6 +350,7 @@
 
         "WeatherServiceService": {
             "Type": "AWS::ECS::Service",
+            "DependsOn": [ "ConfigServerService" ],
             "Properties": {
                 "Cluster": {
                     "Ref": "EcsCluster"
@@ -277,85 +358,6 @@
                 "DesiredCount": "1",
                 "TaskDefinition": {
                     "Ref": "WeatherServiceTask"
-                }
-            }
-        },
-
-        "ConfigServerTask": {
-            "Type": "AWS::ECS::TaskDefinition",
-            "Properties": {
-                "ContainerDefinitions": [
-                    {
-                        "Name": "config-server",
-                        "Image": { "Fn::Join" : ["", [{ "Ref" : "AccountNumber" }, ".dkr.ecr.us-east-1.amazonaws.com/microservices/config-server:latest"]]},
-                        "Memory": "1024",
-                        "Environment": [
-                            {
-                                "Name": "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE",
-                                "Value": {
-                                    "Fn::Join": [
-                                        "",
-                                        [
-                                            "http://",
-                                            {
-                                                "Ref" : "EurekaUrl"
-                                            },
-                                            ":8761/eureka/"
-                                        ]
-                                    ]
-                                }
-                            },
-                            {
-                                "Name": "EUREKA_INSTANCE_HOSTNAME",
-                                "Value": "${local-ipv4:N/A}"
-                            },
-                            {
-                                "Name": "SPRING_PROFILES_ACTIVE",
-                                "Value": "syslog"
-                            }
-                        ],
-                        "PortMappings": [
-                            {
-                                "HostPort": 9000,
-                                "ContainerPort": 9000
-                            }
-                        ],
-                        "Links": [
-                            "logs"
-                        ]
-                    },
-                    {
-                        "Name": "logs",
-                        "Image": { "Fn::Join" : ["", [{ "Ref" : "AccountNumber" }, ".dkr.ecr.us-east-1.amazonaws.com/microservices/ecs-cloudwatch-logs:latest"]]},
-                        "Memory": "64",
-                        "MountPoints": [
-                            {
-                                "SourceVolume": "ecs_instance_logs",
-                                "ContainerPath": "/mnt/ecs_instance_logs"
-                            }
-                        ]
-                    }
-                ],
-                "Volumes": [
-                    {
-                        "Name": "ecs_instance_logs",
-                        "Host": {
-                            "SourcePath": "/var/log"
-                        }
-                    }
-                ]
-            }
-        },
-
-        "ConfigServerService": {
-            "Type": "AWS::ECS::Service",
-            "Properties": {
-                "Cluster": {
-                    "Ref": "EcsCluster"
-                },
-                "DesiredCount": "1",
-                "TaskDefinition": {
-                    "Ref": "ConfigServerTask"
                 }
             }
         }

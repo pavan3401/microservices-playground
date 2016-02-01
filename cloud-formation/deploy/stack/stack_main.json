@@ -677,18 +677,13 @@
             "Properties": {
                 "VpcId": { "Ref" : "VPC" },
                 "GroupDescription": "ELB security group",
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": "Eureka ELB security group"
-                    }
-                ],
                 "SecurityGroupIngress": {
                     "IpProtocol": "tcp",
                     "FromPort": "8761",
                     "ToPort": "8761",
                     "CidrIp": "0.0.0.0/0"
-                }
+                },
+                "Tags" : [ { "Key" : "Name", "Value" : { "Fn::Join" : ["", [{ "Ref" : "Environment"}, "-EurekaELB"]]}} ]
             }
         },
 
@@ -697,18 +692,13 @@
             "Properties": {
                 "VpcId": { "Ref" : "VPC" },
                 "GroupDescription": "ELB security group",
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": "Webapp ELB security group"
-                    }
-                ],
                 "SecurityGroupIngress": {
                     "IpProtocol": "tcp",
                     "FromPort": "80",
                     "ToPort": "80",
                     "CidrIp": "0.0.0.0/0"
-                }
+                },
+                "Tags" : [ { "Key" : "Name", "Value" : { "Fn::Join" : ["", [{ "Ref" : "Environment"}, "-WebAppELB"]]}} ]
             }
         },
 
@@ -719,12 +709,6 @@
                     "Ref": "VPC"
                 },
                 "GroupDescription": "Ecs security group",
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": "Ecs security group"
-                    }
-                ],
                 "SecurityGroupIngress": [
                     {
                         "IpProtocol": "tcp",
@@ -750,7 +734,8 @@
                             "Ref": "EurekaServerLoadBalancerSecurityGroup"
                         }
                     }
-                ]
+                ],
+                "Tags" : [ { "Key" : "Name", "Value" : { "Fn::Join" : ["", [{ "Ref" : "Environment"}, "-ECS"]]}} ]
             }
         },
 

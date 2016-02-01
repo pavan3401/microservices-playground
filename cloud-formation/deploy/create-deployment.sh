@@ -4,7 +4,7 @@ echo -e "\n\n------  This script will create a deployment for a Microservice tes
 
 USAGE="usage: ./create-deployment.sh <bucketName> <keyName> <hostedZoneName>"
 if [ "$#" -lt 3 ] ; then
-  echo $USAGE
+  echo "${USAGE}"
   exit 1
 fi
 
@@ -26,19 +26,19 @@ checkStackStatus()
     STACK_STATUS=""
     while [ -z $STACK_STATUS ]
      do
-        STATUS=`eval $4`
+        STATUS=$(eval "$4")
 
-        if [ "$STATUS" != $2 ]
+        if [ "${STATUS}" != "$2" ]
         then
-            if [ "$STATUS" == "CREATE_FAILED" ]
+            if [ "${STATUS}" == "CREATE_FAILED" ]
             then
                 STACK_STATUS=$STATUS
                 echo "Creation failed"
                 exit 1
             else
-                if [ $count -lt $3 ]
+                if [ $count -lt "$3" ]
                 then
-                    echo "Waiting for $1 to complete, current status : "$STATUS
+                    echo "Waiting for $1 to complete, current status : ${STATUS}"
                     sleep 60
                     count=$((count+1))
                 else
@@ -49,37 +49,37 @@ checkStackStatus()
             fi
         else
            STACK_STATUS=$STATUS
-           echo "Stack $1 status : "$STATUS
+           echo "Stack $1 status : ${STATUS}"
         fi
      done
 }
 
 
-echo -e "\n\n\nThe \""$ENV"\" environment will be created."
+echo -e "\n\n\nThe \"${ENV}\" environment will be created."
 
 
 # Global Variables
-STACK_NAME=$ENV-`date +%m-%d-%y-%H%M`
+STACK_NAME=$ENV-$(date +%m-%d-%y-%H%M)
 RELEASE=test
 
 # Upload on S3 the templates
-aws s3 cp ./stack/ s3://$BUCKET_NAME/deploy/stack/ --recursive --grants read=uri=http://acs.amazonaws.com/groups/global/AuthenticatedUsers
+aws s3 cp ./stack/ s3://"${BUCKET_NAME}"/deploy/stack/ --recursive --grants read=uri=http://acs.amazonaws.com/groups/global/AuthenticatedUsers
 
 
 # Create Stack in AWS
-echo "Create : "$STACK_NAME
+echo "Create : ${STACK_NAME}"
 echo $ENV
-echo "Create Stack "$STACK_NAME"\n"
-aws cloudformation create-stack --stack-name $STACK_NAME --template-url  https://s3.amazonaws.com/$BUCKET_NAME/deploy/stack/stack_main.json \
---parameters ParameterKey=KeyName,ParameterValue=$KEY_NAME \
-ParameterKey=Release,ParameterValue=$RELEASE \
-ParameterKey=AccountNumber,ParameterValue=$AWS_ACCOUNT_NUMBER \
-ParameterKey=HostedZone,ParameterValue=$HOSTED_ZONE_NAME \
-ParameterKey=Environment,ParameterValue=$ENV --capabilities CAPABILITY_IAM --disable-rollback
+echo -e "Create Stack ${STACK_NAME}\n"
+aws cloudformation create-stack --stack-name "${STACK_NAME}" --template-url  https://s3.amazonaws.com/"${BUCKET_NAME}"/deploy/stack/stack_main.json \
+--parameters ParameterKey=KeyName,ParameterValue="${KEY_NAME}" \
+ParameterKey=Release,ParameterValue="${RELEASE}" \
+ParameterKey=AccountNumber,ParameterValue="${AWS_ACCOUNT_NUMBER}" \
+ParameterKey=HostedZone,ParameterValue="${HOSTED_ZONE_NAME}" \
+ParameterKey=Environment,ParameterValue="${ENV}" --capabilities CAPABILITY_IAM --disable-rollback
 
 # Check Stack Status
-COMMAND="aws cloudformation describe-stacks --stack-name $STACK_NAME | jq  '.Stacks[0].StackStatus' |  cut -d \"\\\"\" -f2"
+COMMAND="aws cloudformation describe-stacks --stack-name ${STACK_NAME} | jq  '.Stacks[0].StackStatus' |  cut -d \"\\\"\" -f2"
 checkStackStatus "create stack" "CREATE_COMPLETE" 45 "$COMMAND"
 
 echo "Stack created... displaying info"
-aws cloudformation describe-stacks --stack-name $STACK_NAME
+aws cloudformation describe-stacks --stack-name "${STACK_NAME}"

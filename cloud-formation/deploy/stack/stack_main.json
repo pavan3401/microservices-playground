@@ -31,9 +31,8 @@
         },
 
         "ConfigBucketName" : {
-            "Description" : "The S3 bucket containing server config files",
+            "Description" : "The S3 bucket containing CF templates",
             "Type" : "String",
-            "Default" : "eliza-eureka",
             "ConstraintDescription" : "must be a string."
         },
 

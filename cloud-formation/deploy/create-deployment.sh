@@ -75,6 +75,7 @@ aws cloudformation create-stack --stack-name "${STACK_NAME}" --template-url  htt
 ParameterKey=Release,ParameterValue="${RELEASE}" \
 ParameterKey=AccountNumber,ParameterValue="${AWS_ACCOUNT_NUMBER}" \
 ParameterKey=HostedZone,ParameterValue="${HOSTED_ZONE_NAME}" \
+ParameterKey=ConfigBucketName,ParameterValue="${BUCKET_NAME}" \
 ParameterKey=Environment,ParameterValue="${ENV}" --capabilities CAPABILITY_IAM --disable-rollback
 
 # Check Stack Status

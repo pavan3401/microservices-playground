@@ -65,6 +65,7 @@ aws cloudformation update-stack --stack-name "${STACK_NAME}" --template-url http
 --parameters ParameterKey=KeyName,ParameterValue="${KEY_NAME}" \
 ParameterKey=Release,ParameterValue="${RELEASE}" \
 ParameterKey=AmazonAccount,ParameterValue="${AWS_ACCOUNT_NUMBER}" \
+ParameterKey=ConfigBucketName,ParameterValue="${BUCKET_NAME}" \
 ParameterKey=Environment,ParameterValue="${ENV}" --capabilities CAPABILITY_IAM
 
 # Verify Status

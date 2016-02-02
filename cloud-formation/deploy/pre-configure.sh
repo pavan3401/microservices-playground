@@ -33,7 +33,7 @@ createNecessaryS3Bucket()
 
     if [ "$FOUND" = false ]; then
         echo "Creating S3 ${S3_BUCKET} bucket"
-        aws s3api create-bucket --bucket "${S3_BUCKET}" --region "${AWS_DEFAULT_REGION}" --grant-full-control
+        aws s3api create-bucket --bucket "${S3_BUCKET}" --region "${AWS_DEFAULT_REGION}"
         STATUS=$?
 
         if [ "${STATUS}" -ne 0 ]; then

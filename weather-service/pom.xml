@@ -21,7 +21,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
-        <docker.image.prefix>microservices</docker.image.prefix>
+        <!-- <docker.image.prefix>microservices</docker.image.prefix> -->
     </properties>
 
     <dependencies>
@@ -82,6 +82,7 @@
                     </execution>
                 </executions>
             </plugin>
+            <!--
             <plugin>
                 <groupId>com.spotify</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
@@ -106,6 +107,7 @@
                     </resources>
                 </configuration>
             </plugin>
+             -->
         </plugins>
     </build>
 

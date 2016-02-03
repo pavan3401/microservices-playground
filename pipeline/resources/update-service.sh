@@ -19,6 +19,12 @@ SERVICE_ID=$(aws ecs list-services --cluster "${CLUSTER}" | jq '.serviceArns[]' 
 # Create a new task definition for this build
 sed -e "s;%IMAGE_VERSION%;${IMAGE_VERSION};g" "${TASK_DEFINITION_FILE}" > ${TASK_DEFINITION_FILE}.new
 aws ecs register-task-definition --family "${TASK_FAMILY}" --cli-input-json file://${TASK_DEFINITION_FILE}.new
+STATUS=$?
+
+if [ "${STATUS}" -ne 0 ]; then
+    echo "ERROR: Registering the task definition ${TASK_FAMILY} failed."
+    exit "${STATUS}"
+fi
 
 # Retrieve the actual revision and desired count of the task
 TASK_REVISION=$(aws ecs describe-task-definition --task-definition "${TASK_FAMILY}" | jq '.taskDefinition.revision' )
@@ -37,3 +43,9 @@ echo -e "Count: ${DESIRED_COUNT} "
 
 # Update the service with the new task definition and desired count
 aws ecs update-service --cluster "${CLUSTER}" --service "${SERVICE_ID}" --task-definition "${TASK_FAMILY}:${TASK_REVISION}" --desired-count "${DESIRED_COUNT}"
+STATUS=$?
+
+if [ "${STATUS}" -ne 0 ]; then
+    echo "ERROR: Updating the Service ${SERVICE_ID} failed."
+    exit "${STATUS}"
+fi

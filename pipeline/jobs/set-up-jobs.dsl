@@ -1,7 +1,7 @@
 String mainFolder = 'POC'
 String projectFolder = 'microservices-test'
 String basePath = mainFolder + "/" +  projectFolder
-String gitUrl = 'ElizabethGagne/microservices-playground/'
+String gitUrl = 'ElizabethGagne/microservices-playground'
 
 
 workflowJob("$basePath/create-env-infrastructure") {

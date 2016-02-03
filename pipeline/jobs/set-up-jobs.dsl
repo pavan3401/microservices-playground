@@ -11,7 +11,7 @@ workflowJob("$basePath/create-env-infrastructure") {
 
     definition {
         cps {
-            script(readFileFromWorkspace('jobs/Infrastructure.groovy'))
+            script(readFileFromWorkspace('pipeline/jobs/Infrastructure.groovy'))
             sandbox()
         }
     }
@@ -28,7 +28,7 @@ workflowJob("$basePath/build-weather-service") {
 
     definition {
         cps {
-            script(readFileFromWorkspace('jobs/WeatherService.groovy'))
+            script(readFileFromWorkspace('pipeline/jobs/WeatherService.groovy'))
     	    sandbox()
         }
     }

@@ -18,7 +18,7 @@ class JobScriptsSpec extends Specification {
         JobManagement jm = new MemoryJobManagement()
 
         new File('jobs').eachFileRecurse(FileType.FILES) {
-            jm.availableFiles[it.path.replaceAll('\\\\', '/')] = it.text
+            jm.availableFiles['pipeline/' + it.path.replaceAll('\\\\', '/')] = it.text
         }
 
         when:

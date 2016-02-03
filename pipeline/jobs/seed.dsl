@@ -1,7 +1,7 @@
 String mainFolder = 'POC'
 String projectFolder = 'microservices-test'
 String basePath = mainFolder + "/" +  projectFolder
-String gitUrl = 'https://github.com/ElizabethGagne/microservices-playground/'
+String gitUrl = 'ElizabethGagne/microservices-playground/'
 
 
 folder("$mainFolder") {
@@ -17,7 +17,7 @@ folder("$basePath") {
 
 job("$basePath/seed") {
     scm {
-        git("$gitUrl")
+        github("$gitUrl")
     }
     triggers {
         scm 'H/5 * * * *'

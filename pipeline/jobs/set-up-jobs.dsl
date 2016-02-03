@@ -1,12 +1,12 @@
 String mainFolder = 'POC'
 String projectFolder = 'microservices-test'
 String basePath = mainFolder + "/" +  projectFolder
-String gitUrl = 'https://github.com/ElizabethGagne/microservices-playground/'
+String gitUrl = 'ElizabethGagne/microservices-playground/'
 
 
 workflowJob("$basePath/create-env-infrastructure") {
   	scm {
-        git("$gitUrl")
+        github("$gitUrl")
     }
 
     definition {
@@ -19,7 +19,7 @@ workflowJob("$basePath/create-env-infrastructure") {
 
 workflowJob("$basePath/build-weather-service") {
   	scm {
-        git("$gitUrl")
+        github("$gitUrl")
     }
 
     triggers {

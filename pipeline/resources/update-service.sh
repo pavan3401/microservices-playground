@@ -36,4 +36,4 @@ echo -e "Count: ${DESIRED_COUNT} "
 
 
 # Update the service with the new task definition and desired count
-aws ecs update-service --cluster "${CLUSTER}" --service "${SERVICE_NAME}" --task-definition ${TASK_FAMILY}:${TASK_REVISION} --desired-count "${DESIRED_COUNT}"
+aws ecs update-service --cluster "${CLUSTER}" --service "${SERVICE_ID}" --task-definition "${TASK_FAMILY}:${TASK_REVISION}" --desired-count "${DESIRED_COUNT}"

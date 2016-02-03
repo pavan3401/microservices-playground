@@ -1,10 +1,5 @@
 {
   "family": "microservice-test-01-30-16-1719-Microservices-1UQ0RADG37131-WeatherServiceTask-V60JKRFUR9EM",
-  "requiresAttributes": [
-    {
-      "name": "com.amazonaws.ecs.capability.ecr-auth"
-    }
-  ],
   "volumes": [
     {
       "host": {

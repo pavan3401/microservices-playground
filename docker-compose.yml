@@ -1,5 +1,5 @@
 eureka-server:
-  image: microservices/eureka-server
+  container_name: eureka-server
   dns: 8.8.8.8
   restart: always
   ports:
@@ -8,8 +8,9 @@ eureka-server:
     - logs
   environment:
       SPRING_PROFILES_ACTIVE: syslog
+  build: eureka-server
 config-server:
-  image: microservices/config-server
+  container_name: config-server
   restart: always
   dns: 8.8.8.8
   links:
@@ -19,13 +20,14 @@ config-server:
       EUREKA_INSTANCE_HOSTNAME: config-server
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_PROFILES_ACTIVE: syslog
+  build: config-server
 logs:
   container_name: logs
   restart: always
   dns: 8.8.8.8
   build: local-logs
 webapp:
-  image: microservices/webapp
+  container_name: webapp
   restart: always
   dns: 8.8.8.8
   ports:
@@ -41,8 +43,9 @@ webapp:
       SPRING_CLOUD_CONFIG_DISCOVERY_ENABLED: true
       SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID: config-server
       SPRING_PROFILES_ACTIVE: syslog
+  build: webapp
 weather-service:
-  image: microservices/weather-service
+  container_name: weather-service
   restart: always
   dns: 8.8.8.8
   ports:
@@ -57,5 +60,6 @@ weather-service:
       SPRING_CLOUD_CONFIG_DISCOVERY_ENABLED: true
       SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID: config-server
       SPRING_PROFILES_ACTIVE: syslog
+  build: weather-service
 
 

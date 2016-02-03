@@ -1,0 +1,80 @@
+{
+  "family": "microservice-test-01-30-16-1719-Microservices-1UQ0RADG37131-WeatherServiceTask-V60JKRFUR9EM",
+  "requiresAttributes": [
+    {
+      "name": "com.amazonaws.ecs.capability.ecr-auth"
+    }
+  ],
+  "volumes": [
+    {
+      "host": {
+        "sourcePath": "/var/log"
+      },
+      "name": "ecs_instance_logs"
+    }
+  ],
+  "containerDefinitions": [
+    {
+      "environment": [
+        {
+          "name": "EUREKA_INSTANCE_HOSTNAME",
+          "value": "${local-ipv4:N/A}"
+        },
+        {
+          "name": "SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID",
+          "value": "config-server"
+        },
+        {
+          "name": "SPRING_CLOUD_CONFIG_DISCOVERY_ENABLED",
+          "value": "true"
+        },
+        {
+          "name": "SPRING_PROFILES_ACTIVE",
+          "value": "syslog"
+        },
+        {
+          "name": "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE",
+          "value": "http://internal-microserv-EurekaSe-573T7XO1N1PM-1694078570.us-east-1.elb.amazonaws.com:8761/eureka/"
+        }
+      ],
+      "name": "service",
+      "links": [
+        "logs"
+      ],
+      "mountPoints": [],
+      "image": "%IMAGE_VERSION%",
+      "essential": true,
+      "portMappings": [
+        {
+          "protocol": "tcp",
+          "containerPort": 8081,
+          "hostPort": 8081
+        }
+      ],
+      "entryPoint": [],
+      "memory": 1024,
+      "command": [],
+      "cpu": 0,
+      "volumesFrom": []
+    },
+    {
+      "environment": [],
+      "name": "logs",
+      "links": [],
+      "mountPoints": [
+        {
+          "sourceVolume": "ecs_instance_logs",
+          "containerPath": "/mnt/ecs_instance_logs"
+        }
+      ],
+      "image": "496809802716.dkr.ecr.us-east-1.amazonaws.com/microservices/ecs-cloudwatch-logs:latest",
+      "essential": true,
+      "portMappings": [],
+      "entryPoint": [],
+      "memory": 64,
+      "command": [],
+      "cpu": 0,
+      "volumesFrom": []
+    }
+  ]
+}

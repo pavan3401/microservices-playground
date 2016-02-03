@@ -69,11 +69,16 @@ createNecessaryRepositories()
     done
 }
 
-# Create microservices/ecs-cloudwatch-logs image
-createCloudWatchLogsImage()
+# bake Image for each microservices
+bakeImages()
 {
-    echo "Creating CloudWatch Logs Image..."
-    docker build -t microservices/ecs-cloudwatch-logs ../../cloudwatch-logs
+    echo "Baking Docker Images for each microservices..."
+
+    for dir in "${EXPECTED_REPOSITORIES[@]}"
+    do
+        echo "Baking Image in dir ${dir}"
+        docker build -t microservices/"${dir}" ../../"${dir}"
+    done
 }
 
 # Tag and Push Latest Images to ECR
@@ -106,7 +111,7 @@ findAllExistingS3Buckets
 createNecessaryS3Bucket
 findAllExistingRepositories
 createNecessaryRepositories
-createCloudWatchLogsImage
+bakeImages
 loginToECR
 tagAndPushLatestImagesToECR
 

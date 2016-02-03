@@ -18,7 +18,7 @@ SERVICE_ID=$(aws ecs list-services --cluster "${CLUSTER}" | jq '.serviceArns[]' 
 
 # Create a new task definition for this build
 sed -e "s;%IMAGE_VERSION%;${IMAGE_VERSION};g" "${TASK_DEFINITION_FILE}" > ${TASK_DEFINITION_FILE}.new
-aws ecs register-task-definition --family "${TASK_FAMILY}" --cli-input-json file://${TASK_DEFINITION_FILE}.new
+aws ecs register-task-definition --cli-input-json file://${TASK_DEFINITION_FILE}.new
 STATUS=$?
 
 if [ "${STATUS}" -ne 0 ]; then

@@ -13,7 +13,7 @@ SERVICE_NAME=$4
 TAG='EUREKA_CLIENT_SERVICEURL_DEFAULTZONE'
 
 # Retrieve 'Task Family', 'Cluster' and 'Service Id' of the service to update
-TASK_ID=$(aws ecs list-task-definitions --status ACTIVE | jq '.taskDefinitionArns[]' | grep "${SERVICE_NAME}" | awk 'NR==1{print $1}' | cut -d'"' -f2)
+TASK_ID=$(aws ecs list-task-definitions --status ACTIVE --sort DESC | jq '.taskDefinitionArns[]' | grep "${ENVIRONMENT}" | grep "${SERVICE_NAME}" | awk 'NR==1{print $1}' | cut -d'"' -f2)
 TASK_DEF=$(aws ecs describe-task-definition --task-definition "${TASK_ID}")
 TASK_FAMILY=$(echo "${TASK_DEF}" | jq '.taskDefinition.family' | cut -d'"' -f2)
 EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=$(echo "${TASK_DEF}" | jq --arg tag ${TAG} '.taskDefinition.containerDefinitions[].environment[] | select (.name | contains($tag)) | .value' | cut -d'"' -f2)

@@ -10,6 +10,8 @@ fi
 PROJECT="microservices"
 S3_BUCKET=$1
 declare -a EXPECTED_REPOSITORIES=("weather-service" "config-server" "eureka-server" "webapp" "ecs-cloudwatch-logs")
+AWS_DEFAULT_REGION=$(aws configure get default.region)
+AWS_ACCOUNT_NUMBER=$(aws iam get-user | awk '/arn:aws:/{print $2}' | cut -d \: -f 5)
 
 # Find all existing S3 buckets into that AWS account
 findAllExistingS3Buckets()

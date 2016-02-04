@@ -10,14 +10,21 @@ TASK_DEFINITION_FILE=$1
 IMAGE_VERSION=$2
 ENVIRONMENT=$3
 SERVICE_NAME=$4
+TAG='EUREKA_CLIENT_SERVICEURL_DEFAULTZONE'
 
 # Retrieve 'Task Family', 'Cluster' and 'Service Id' of the service to update
-TASK_FAMILY=$(cat "${TASK_DEFINITION_FILE}" | jq '.family' | cut -d'"' -f2  )
+TASK_ID=$(aws ecs list-task-definitions --status ACTIVE | jq '.taskDefinitionArns[]' | grep "${SERVICE_NAME}" | awk 'NR==1{print $1}' | cut -d'"' -f2)
+TASK_DEF=$(aws ecs describe-task-definition --task-definition "${TASK_ID}")
+TASK_FAMILY=$(echo "${TASK_DEF}" | jq '.taskDefinition.family' | cut -d'"' -f2)
+EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=$(echo "${TASK_DEF}" | jq --arg tag ${TAG} '.taskDefinition.containerDefinitions[].environment[] | select (.name | contains($tag)) | .value' | cut -d'"' -f2)
 CLUSTER=$(aws ecs list-clusters | jq '.clusterArns[]' | grep "${ENVIRONMENT}" | cut -d'"' -f2 )
 SERVICE_ID=$(aws ecs list-services --cluster "${CLUSTER}" | jq '.serviceArns[]' | grep "${SERVICE_NAME}" | cut -d'"' -f2 )
 
 # Create a new task definition for this build
-sed -e "s;%IMAGE_VERSION%;${IMAGE_VERSION};g" "${TASK_DEFINITION_FILE}" > ${TASK_DEFINITION_FILE}.new
+cp ${TASK_DEFINITION_FILE} ${TASK_DEFINITION_FILE}.new
+sed -i.bak "s;%IMAGE_VERSION%;${IMAGE_VERSION};g" "${TASK_DEFINITION_FILE}.new"
+sed -i.bak "s;%FAMILY_NAME%;${TASK_FAMILY};g" "${TASK_DEFINITION_FILE}.new"
+sed -i.bak "s;%ELB%;${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE};g" "${TASK_DEFINITION_FILE}.new"
 aws ecs register-task-definition --cli-input-json file://${TASK_DEFINITION_FILE}.new
 STATUS=$?
 

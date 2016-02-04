@@ -1,12 +1,34 @@
 String mainFolder = 'POC'
 String projectFolder = 'microservices-test'
 String basePath = mainFolder + "/" +  projectFolder
-String gitUrl = 'ElizabethGagne/microservices-playground'
+String gitRepo = 'ElizabethGagne/microservices-playground'
 
-
-workflowJob("$basePath/create-env-infrastructure") {
+workflowJob("$basePath/1. pre-configure") {
   	scm {
-        github("$gitUrl")
+        github("$gitRepo")
+    }
+
+    parameters {
+        stringParam('BUCKET_NAME', 'eliza-eureka')
+    }
+
+    definition {
+        cps {
+            script(readFileFromWorkspace('pipeline/jobs/PreConfigure.groovy'))
+            sandbox()
+        }
+    }
+}
+
+workflowJob("$basePath/2. create-deployment") {
+  	scm {
+        github("$gitRepo")
+    }
+
+    parameters {
+        stringParam('BUCKET_NAME', 'eliza-eureka')
+        stringParam('KEY_NAME', 'eureka')
+        stringParam('HOSTED_ZONE_NAME', 'goe3.ca')
     }
 
     definition {
@@ -17,9 +39,9 @@ workflowJob("$basePath/create-env-infrastructure") {
     }
 }
 
-workflowJob("$basePath/build-weather-service") {
+workflowJob("$basePath/3. update-weather-service") {
   	scm {
-        github("$gitUrl")
+        github("$gitRepo")
     }
 
     triggers {

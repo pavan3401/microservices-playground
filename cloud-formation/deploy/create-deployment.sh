@@ -16,7 +16,7 @@ HOSTED_ZONE_NAME=$3
 
 ## Function to check if the stack creation succeeded. If after x number of minutes it's not successful, we give up and exit 1
 ## Parameters:
-##     $1 String   why is this fonction called
+##     $1 String   why is this function called
 ##     $2 String   status expected
 ##     $3 Integer  number of minutes to wait
 ##     $4 String   command to pass

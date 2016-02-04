@@ -1,7 +1,7 @@
 String mainFolder = 'POC'
 String projectFolder = 'microservices-test'
 String basePath = mainFolder + "/" +  projectFolder
-String gitUrl = 'ElizabethGagne/microservices-playground'
+String gitRepo = 'ElizabethGagne/microservices-playground'
 
 
 folder("$mainFolder") {
@@ -15,9 +15,9 @@ folder("$basePath") {
 // If you want, you can define your seed job in the DSL and create it via the REST API.
 // See README.md
 
-job("$basePath/seed") {
+job("$basePath/0. seed") {
     scm {
-        github("$gitUrl")
+        github("$gitRepo")
     }
     triggers {
         scm 'H/5 * * * *'

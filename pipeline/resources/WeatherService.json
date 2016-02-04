@@ -1,5 +1,5 @@
 {
-  "family": "microservice-test-01-30-16-1719-Microservices-1UQ0RADG37131-WeatherServiceTask-V60JKRFUR9EM",
+  "family": "%FAMILY_NAME%",
   "volumes": [
     {
       "host": {
@@ -29,7 +29,7 @@
         },
         {
           "name": "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE",
-          "value": "http://internal-microserv-EurekaSe-573T7XO1N1PM-1694078570.us-east-1.elb.amazonaws.com:8761/eureka/"
+          "value": "%ELB%"
         }
       ],
       "name": "service",

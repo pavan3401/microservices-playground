@@ -1,4 +1,5 @@
 node {
+    git url: env.GIT_URL
 
     stage "Create Deployment Infrastructure" // --------------------------------------
 

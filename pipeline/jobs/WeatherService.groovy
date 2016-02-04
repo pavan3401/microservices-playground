@@ -7,6 +7,7 @@ node {
 
     stage "Build Service" // --------------------------------------
 
+    git url: env.GIT_URL
     env.EPOCH="latest"
     env.GIT_HASH=stringFromOutput('git rev-parse HEAD | cut -c-8')
     env.TAG_LIST="1.0-${env.GIT_HASH}-${env.EPOCH}"
@@ -30,7 +31,7 @@ node {
     sh 'docker images'
 
     // Login into Amazon ECR
-    sh "$(aws ecr get-login --region ${REGION})"
+    sh '$(aws ecr get-login)'
 
     // Push Docker Image to Amazon ECR Repository
     localImage.push()

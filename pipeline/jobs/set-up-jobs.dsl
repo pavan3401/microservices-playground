@@ -2,6 +2,7 @@ String mainFolder = 'POC'
 String projectFolder = 'microservices-test'
 String basePath = mainFolder + "/" +  projectFolder
 String gitRepo = 'ElizabethGagne/microservices-playground'
+String gitUrl = 'https://github.com/' + gitRepo
 
 workflowJob("$basePath/1. pre-configure") {
   	scm {
@@ -9,6 +10,7 @@ workflowJob("$basePath/1. pre-configure") {
     }
 
     parameters {
+        stringParam('GIT_URL' , "$gitUrl")
         stringParam('BUCKET_NAME', 'eliza-eureka')
     }
 
@@ -26,6 +28,7 @@ workflowJob("$basePath/2. create-deployment") {
     }
 
     parameters {
+        stringParam('GIT_URL' , "$gitUrl")
         stringParam('BUCKET_NAME', 'eliza-eureka')
         stringParam('KEY_NAME', 'eureka')
         stringParam('HOSTED_ZONE_NAME', 'goe3.ca')
@@ -46,6 +49,10 @@ workflowJob("$basePath/3. update-weather-service") {
 
     triggers {
         githubPush()
+    }
+
+    parameters {
+        stringParam('GIT_URL' , "$gitUrl")
     }
 
     definition {

@@ -7,7 +7,7 @@ node {
 
     stage "Build Service" // --------------------------------------
 
-    git url: env.GIT_URL
+    git url: GIT_URL
     env.EPOCH="latest"
     env.GIT_HASH=stringFromOutput('git rev-parse HEAD | cut -c-8')
     env.TAG_LIST="1.0-${env.GIT_HASH}-${env.EPOCH}"

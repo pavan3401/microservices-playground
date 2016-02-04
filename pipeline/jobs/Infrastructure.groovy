@@ -1,9 +1,9 @@
 node {
-    git url: env.GIT_URL
+    git url: GIT_URL
 
     stage "Create Deployment Infrastructure" // --------------------------------------
 
-    createDeployment(env.BUCKET_NAME, env.KEY_NAME, env.HOSTED_ZONE_NAME)
+    createDeployment(BUCKET_NAME, KEY_NAME, HOSTED_ZONE_NAME)
 }
 
 def createDeployment(bucketName, keyName, zoneName) {

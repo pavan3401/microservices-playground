@@ -1,5 +1,5 @@
 node {
-    git url: env.GIT_URL
+    git url: GIT_URL
 
     stage "Build Service" // --------------------------------------
 
@@ -11,7 +11,7 @@ node {
 
     stage "Pre-configure" // --------------------------------------
 
-    preConfigure(env.BUCKET_NAME)
+    preConfigure(BUCKET_NAME)
 }
 
 def preConfigure(bucketName) {

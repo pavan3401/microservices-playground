@@ -12,6 +12,7 @@ ENV=microservice-test
 BUCKET_NAME=$1
 KEY_NAME=$2
 HOSTED_ZONE_NAME=$3
+AWS_ACCOUNT_NUMBER=$(aws iam get-user | awk '/arn:aws:/{print $2}' | cut -d \: -f 5)
 
 
 ## Function to check if the stack creation succeeded. If after x number of minutes it's not successful, we give up and exit 1

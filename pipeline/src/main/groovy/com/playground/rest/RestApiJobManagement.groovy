@@ -1,4 +1,4 @@
-package com.scrippsnetworks.rest
+package com.playground.rest
 
 import groovyx.net.http.ContentType
 import groovyx.net.http.HttpResponseDecorator

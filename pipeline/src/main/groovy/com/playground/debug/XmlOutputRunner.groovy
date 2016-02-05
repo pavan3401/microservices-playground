@@ -1,4 +1,4 @@
-package com.scrippsnetworks.debug
+package com.playground.debug
 
 import groovy.io.FileType
 import javaposse.jobdsl.dsl.*

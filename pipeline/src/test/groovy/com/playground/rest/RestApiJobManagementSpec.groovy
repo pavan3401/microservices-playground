@@ -1,8 +1,8 @@
-package com.scrippsnetworks.rest
+package com.playground.rest
 
 import spock.lang.Specification
 
-import static com.scrippsnetworks.rest.RestApiJobManagement.getPath
+import static com.playground.rest.RestApiJobManagement.getPath
 
 class RestApiJobManagementSpec extends Specification {
 

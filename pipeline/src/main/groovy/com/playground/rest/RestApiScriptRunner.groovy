@@ -1,4 +1,4 @@
-package com.scrippsnetworks.rest
+package com.playground.rest
 
 import javaposse.jobdsl.dsl.DslScriptLoader
 

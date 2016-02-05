@@ -1,4 +1,4 @@
-package com.scrippsnetworks
+package com.playground
 
 import groovy.io.FileType
 import javaposse.jobdsl.dsl.DslScriptLoader

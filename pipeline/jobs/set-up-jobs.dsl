@@ -20,11 +20,6 @@ workflowJob("$basePath/1. pre-configure") {
             sandbox()
         }
     }
-
-    publishers {
-        downstream("$basePath/2. create-deployment", 'SUCCESS')
-
-    }
 }
 
 workflowJob("$basePath/2. create-deployment") {
@@ -65,9 +60,5 @@ workflowJob("$basePath/3. update-weather-service") {
             script(readFileFromWorkspace('pipeline/jobs/WeatherService.groovy'))
     	    sandbox()
         }
-    }
-
-    publishers {
-        archiveJunit('**/target/surefire-reports/*.xml')
     }
 }

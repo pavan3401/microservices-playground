@@ -3,7 +3,7 @@
 
 ## File structure
 
-pipeline
+    pipeline
     ├── jobs                    # DSL/Workflow script files
     ├── resources               # resources for DSL scripts (templates and bash scripts)
     ├── src
@@ -17,7 +17,7 @@ pipeline
 
 # Jobs
 
-# (jobs/PreConfigure.groovy)     - Workflow pipeline to create S3 bucket, build all microservices, bake images and upload them to ECR.
+* (jobs/PreConfigure.groovy)     - Workflow pipeline to create S3 bucket, build all microservices, bake images and upload them to ECR.
 * (jobs/Infrastructure.groovy)   - Workflow pipeline to build the infrastructure in AWS, creating VPC, Subnet, ELB, ECS cluster and deploying the microservices.
 * (jobs/WeatherServvice.groovy)  - Workflow pipeline to build and deploy a new version of the WeatherService in microservice-test environment on AWS
 * (jobs/seed.dsl)                - JobDsl seed job to be upload on Jenkins to setup automatically the jobs

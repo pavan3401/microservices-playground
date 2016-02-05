@@ -22,10 +22,8 @@ workflowJob("$basePath/1. pre-configure") {
     }
 
     publishers {
-        archiveJunit('**/target/surefire-reports/*.xml')
-        downstreamParameterized {
-            trigger("$basePath/2. create-deployment", 'SUCCESS')
-        }
+        downstream("$basePath/2. create-deployment", 'SUCCESS')
+
     }
 }
 

@@ -18,6 +18,7 @@ public class WeatherServiceController {
         cities.put("Paris", "16°C, Cloudy");
         cities.put("Barcelona", "25°C, Sunny");
         cities.put("Miami", "19°C, Sunny");
+        cities.put("Montreal", "0°C, Cloudy");
         return new ResponseEntity<>(cities, HttpStatus.OK);
     }
 }

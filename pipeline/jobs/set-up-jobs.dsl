@@ -32,6 +32,14 @@ workflowJob("$basePath/2. create-deployment") {
         stringParam('BUCKET_NAME', 'eliza-eureka')
         stringParam('KEY_NAME', 'eureka')
         stringParam('HOSTED_ZONE_NAME', 'goe3.ca')
+        stringParam('LOG_COLLECTOR', 'cloudwatch')
+    }
+
+    wrappers {
+        credentialsBinding {
+            string('SUMO_ACCESS_ID', 'SUMO_ACCESS_ID')
+            string('SUMO_ACCESS_KEY','SUMO_ACCESS_KEY')
+        }
     }
 
     definition {

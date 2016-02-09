@@ -104,6 +104,26 @@
         "HostedZone": {
             "Description": "Domain used for route 53",
             "Type": "String"
+        },
+
+        "LogCollector" : {
+            "Default": "cloudwatch",
+            "Description" : "Log collector that this stack will be using, either CloudWatch Logs or SumoLogic.",
+            "Type" : "String",
+            "AllowedValues" : [ "cloudwatch", "sumologic" ],
+            "ConstraintDescription" : "Must be one of the following - cloudwatch | sumologic"
+        },
+
+        "SumoAccessID": {
+            "Description": "Summo Access ID",
+            "Type": "String",
+            "Default" : ""
+        },
+
+        "SumoAccessKey": {
+            "Description": "Summo Access Key",
+            "Type": "String",
+            "Default" : ""
         }
 
     },
@@ -930,7 +950,10 @@
                     "EurekaServerLoadBalancerSecurityGroup" : { "Ref" : "EurekaServerLoadBalancerSecurityGroup" },
                     "EcsCluster" : { "Fn::GetAtt" : [ "EcsInfrastructure", "Outputs.EcsCluster" ] },
                     "EcsServiceRole" : { "Fn::GetAtt" : [ "EcsInfrastructure", "Outputs.EcsServiceRole" ] },
-                    "AccountNumber" : { "Ref" : "AccountNumber" }
+                    "AccountNumber" : { "Ref" : "AccountNumber" },
+                    "LogCollector" : { "Ref" : "LogCollector" },
+                    "SumoAccessID" : { "Ref" : "SumoAccessID" },
+                    "SumoAccessKey" : { "Ref" : "SumoAccessKey" }
                 }
             }
         },
@@ -950,7 +973,10 @@
                     "EcsCluster" : { "Fn::GetAtt" : [ "EcsInfrastructure", "Outputs.EcsCluster" ] },
                     "EcsServiceRole" : { "Fn::GetAtt" : [ "EcsInfrastructure", "Outputs.EcsServiceRole" ] },
                     "EurekaUrl" : { "Fn::GetAtt" : [ "EurekaServers", "Outputs.EurekaUrl" ] },
-                    "AccountNumber" : { "Ref" : "AccountNumber" }
+                    "AccountNumber" : { "Ref" : "AccountNumber" },
+                    "LogCollector" : { "Ref" : "LogCollector" },
+                    "SumoAccessID" : { "Ref" : "SumoAccessID" },
+                    "SumoAccessKey" : { "Ref" : "SumoAccessKey" }
                 }
             }
         },

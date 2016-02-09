@@ -2,9 +2,12 @@
 
 echo -e "\n\n------  This script will create a deployment for a Microservice test AWS cloud environment ------"
 
-USAGE="usage: ./create-deployment.sh <bucketName> <keyName> <hostedZoneName>"
-if [ "$#" -lt 3 ] ; then
+USAGE="usage: ./create-deployment.sh <bucketName> <keyName> <hostedZoneName> <logCollector> <sumoAccessId> <sumoAccessKey>"
+EXAMPLE="example: ./create-deployment.sh eliza-eureka eureka goe3.ca cloudwatch"
+
+if [ "$#" -lt 4 ] ; then
   echo "${USAGE}"
+  echo "${EXAMPLE}"
   exit 1
 fi
 
@@ -12,7 +15,11 @@ ENV=microservice-test
 BUCKET_NAME=$1
 KEY_NAME=$2
 HOSTED_ZONE_NAME=$3
+LOG_COLLECTOR=$4
+SUMO_ACCESS_ID=${5:-""}
+SUMO_ACCESS_KEY=${6:-""}
 AWS_ACCOUNT_NUMBER=$(aws iam get-user | awk '/arn:aws:/{print $2}' | cut -d \: -f 5)
+
 
 
 ## Function to check if the stack creation succeeded. If after x number of minutes it's not successful, we give up and exit 1
@@ -77,6 +84,9 @@ ParameterKey=Release,ParameterValue="${RELEASE}" \
 ParameterKey=AccountNumber,ParameterValue="${AWS_ACCOUNT_NUMBER}" \
 ParameterKey=HostedZone,ParameterValue="${HOSTED_ZONE_NAME}" \
 ParameterKey=ConfigBucketName,ParameterValue="${BUCKET_NAME}" \
+ParameterKey=LogCollector, ParameterValue="${LOG_COLLECTOR}" \
+ParameterKey=SumoAccessID, ParameterValue="${SUMO_ACCESS_ID}" \
+ParameterKey=SumoAccessKey, ParameterValue="${SUMO_ACCESS_KEY}" \
 ParameterKey=Environment,ParameterValue="${ENV}" --capabilities CAPABILITY_IAM --disable-rollback
 
 # Check Stack Status

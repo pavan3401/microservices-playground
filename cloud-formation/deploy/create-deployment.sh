@@ -84,9 +84,9 @@ ParameterKey=Release,ParameterValue="${RELEASE}" \
 ParameterKey=AccountNumber,ParameterValue="${AWS_ACCOUNT_NUMBER}" \
 ParameterKey=HostedZone,ParameterValue="${HOSTED_ZONE_NAME}" \
 ParameterKey=ConfigBucketName,ParameterValue="${BUCKET_NAME}" \
-ParameterKey=LogCollector, ParameterValue="${LOG_COLLECTOR}" \
-ParameterKey=SumoAccessID, ParameterValue="${SUMO_ACCESS_ID}" \
-ParameterKey=SumoAccessKey, ParameterValue="${SUMO_ACCESS_KEY}" \
+ParameterKey=LogCollector,ParameterValue="${LOG_COLLECTOR}" \
+ParameterKey=SumoAccessID,ParameterValue="${SUMO_ACCESS_ID}" \
+ParameterKey=SumoAccessKey,ParameterValue="${SUMO_ACCESS_KEY}" \
 ParameterKey=Environment,ParameterValue="${ENV}" --capabilities CAPABILITY_IAM --disable-rollback
 
 # Check Stack Status

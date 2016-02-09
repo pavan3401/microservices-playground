@@ -1,10 +1,8 @@
 #!/bin/bash
 
-USAGE="usage: sh update-deployment.sh releaseVersion#  bucketName keyName"
-EXAMPLE="./update-deployment.sh 2 eliza-eureka eureka"
-if [ "$#" -lt 3 ] ; then
+USAGE="usage: ./create-deployment.sh <releaseVersion#> <bucketName> <keyName> <hostedZoneName> <logCollector> <sumoAccessId> <sumoAccessKey>"
+if [ "$#" -lt 5 ] ; then
   echo "${USAGE}"
-  echo "${EXAMPLE}"
   exit 1
 fi
 
@@ -12,6 +10,10 @@ ENV=microservice-test
 RELEASE=test$1
 BUCKET_NAME=$2
 KEY_NAME=$3
+HOSTED_ZONE_NAME=$4
+LOG_COLLECTOR=$5
+SUMO_ACCESS_ID=${6:-""}
+SUMO_ACCESS_KEY=${7:-""}
 STACK_NAME=$(aws cloudformation describe-stacks | jq --arg tag "${ENV}" '.Stacks[] | select (.StackName | contains($tag)) | .StackName' | cut -d"\"" -f2)
 
 
@@ -66,6 +68,10 @@ aws cloudformation update-stack --stack-name "${STACK_NAME}" --template-url http
 ParameterKey=Release,ParameterValue="${RELEASE}" \
 ParameterKey=AmazonAccount,ParameterValue="${AWS_ACCOUNT_NUMBER}" \
 ParameterKey=ConfigBucketName,ParameterValue="${BUCKET_NAME}" \
+ParameterKey=HostedZone,ParameterValue="${HOSTED_ZONE_NAME}" \
+ParameterKey=LogCollector,ParameterValue="${LOG_COLLECTOR}" \
+ParameterKey=SumoAccessID,ParameterValue="${SUMO_ACCESS_ID}" \
+ParameterKey=SumoAccessKey,ParameterValue="${SUMO_ACCESS_KEY}" \
 ParameterKey=Environment,ParameterValue="${ENV}" --capabilities CAPABILITY_IAM
 
 # Verify Status

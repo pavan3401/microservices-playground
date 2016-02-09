@@ -31,13 +31,13 @@ dependencies {
 }
 
 task rest(dependsOn: 'classes', type: JavaExec) {
-    main = 'com.scrippsnetworks.rest.RestApiScriptRunner'
+    main = 'com.playground.rest.RestApiScriptRunner'
     classpath = sourceSets.main.runtimeClasspath
     systemProperties System.getProperties()
 }
 
 task debugXml(dependsOn: 'classes', type: JavaExec) {
-    main = 'com.scrippsnetworks.debug.XmlOutputRunner'
+    main = 'com.playground.debug.XmlOutputRunner'
     classpath = sourceSets.main.runtimeClasspath
     systemProperties System.getProperties()
 }

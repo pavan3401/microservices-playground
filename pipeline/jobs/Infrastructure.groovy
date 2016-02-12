@@ -11,13 +11,11 @@ node {
         env.sumo_key = credential("SUMO_ACCESS_KEY")
     }
 
-    createDeployment(BUCKET_NAME, KEY_NAME, HOSTED_ZONE_NAME, LOG_COLLECTOR,env.sumo_id,env.sumo_key))
+    createDeployment(BUCKET_NAME, KEY_NAME, HOSTED_ZONE_NAME, LOG_COLLECTOR,env.sumo_id,env.sumo_key)
 }
 
 def createDeployment(bucketName, keyName, zoneName, logCollector, sumoAccessId, sumoAccessKey) {
-    def command = 'cd cloud-formation/deploy/\n' +
-        '/bin/bash ./create-deployment.sh ' + bucketName + ' ' + keyName + ' ' + zoneName + ' '
-        + logCollector + ' ' + sumoAccessId + ' ' + sumoAccessKey
+    def command = 'cd cloud-formation/deploy/\n' + '/bin/bash ./create-deployment.sh ' + bucketName + ' ' + keyName + ' ' + zoneName + ' ' + logCollector + ' ' + sumoAccessId + ' ' + sumoAccessKey
     sh command
 }
 

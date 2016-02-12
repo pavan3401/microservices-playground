@@ -215,13 +215,7 @@
                         "PortMappings": [
                             {
                                 "HostPort": 514,
-                                "ContainerPort": 514,
-                                "Protocol": "tcp"
-                            },
-                            {
-                                "HostPort": 514,
-                                "ContainerPort": 514,
-                                "Protocol": "udp"
+                                "ContainerPort": 514
                             }
                         ]
                     }
@@ -429,13 +423,7 @@
                         "PortMappings": [
                             {
                                 "HostPort": 514,
-                                "ContainerPort": 514,
-                                "Protocol": "tcp"
-                            },
-                            {
-                                "HostPort": 514,
-                                "ContainerPort": 514,
-                                "Protocol": "udp"
+                                "ContainerPort": 514
                             }
                         ]
                     }
@@ -619,13 +607,7 @@
                         "PortMappings": [
                             {
                                 "HostPort": 514,
-                                "ContainerPort": 514,
-                                "Protocol": "tcp"
-                            },
-                            {
-                                "HostPort": 514,
-                                "ContainerPort": 514,
-                                "Protocol": "udp"
+                                "ContainerPort": 514
                             }
                         ]
                     }

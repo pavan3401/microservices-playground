@@ -200,6 +200,22 @@
                             {
                                 "Name": "SUMO_ACCESS_KEY",
                                 "Value": { "Ref" : "SumoAccessKey"}
+                            },
+                            {
+                                "Name": "SUMO_COLLECTOR_NAME",
+                                "Value" : "SyslogCollector"
+                            }
+                        ],
+                        "PortMappings": [
+                            {
+                                "HostPort": 514,
+                                "ContainerPort": 514,
+                                "Protocol": "tcp"
+                            },
+                            {
+                                "HostPort": 514,
+                                "ContainerPort": 514,
+                                "Protocol": "udp"
                             }
                         ]
                     }

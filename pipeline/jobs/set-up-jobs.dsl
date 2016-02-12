@@ -35,13 +35,6 @@ workflowJob("$basePath/2. create-deployment") {
         stringParam('LOG_COLLECTOR', 'cloudwatch')
     }
 
-    wrappers {
-        credentialsBinding {
-            string('SUMO_ACCESS_ID', 'SUMO_ACCESS_ID')
-            string('SUMO_ACCESS_KEY','SUMO_ACCESS_KEY')
-        }
-    }
-
     definition {
         cps {
             script(readFileFromWorkspace('pipeline/jobs/Infrastructure.groovy'))

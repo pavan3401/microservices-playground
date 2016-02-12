@@ -137,8 +137,8 @@
                         "Memory": "64",
                         "MountPoints": [
                             {
-                                "SourceVolume": "ecs_instance_logs",
-                                "ContainerPath": "/mnt/ecs_instance_logs"
+                                "SourceVolume": {"Fn::If" : [ "UseCloudWatch","ecs_instance_logs",{ "Ref" : "AWS::NoValue" }]},
+                                "ContainerPath":{"Fn::If" : [ "UseCloudWatch","/mnt/ecs_instance_logs",{ "Ref" : "AWS::NoValue" }]}
                             }
                         ],
                         "Environment": [
@@ -287,8 +287,8 @@
                         "Memory": "64",
                         "MountPoints": [
                             {
-                                "SourceVolume": "ecs_instance_logs",
-                                "ContainerPath": "/mnt/ecs_instance_logs"
+                                "SourceVolume": {"Fn::If" : [ "UseCloudWatch","ecs_instance_logs",{ "Ref" : "AWS::NoValue" }]},
+                                "ContainerPath":{"Fn::If" : [ "UseCloudWatch","/mnt/ecs_instance_logs",{ "Ref" : "AWS::NoValue" }]}
                             }
                         ],
                         "Environment": [
@@ -413,8 +413,8 @@
                         "Memory": "64",
                         "MountPoints": [
                             {
-                                "SourceVolume": "ecs_instance_logs",
-                                "ContainerPath": "/mnt/ecs_instance_logs"
+                                "SourceVolume": {"Fn::If" : [ "UseCloudWatch","ecs_instance_logs",{ "Ref" : "AWS::NoValue" }]},
+                                "ContainerPath":{"Fn::If" : [ "UseCloudWatch","/mnt/ecs_instance_logs",{ "Ref" : "AWS::NoValue" }]}
                             }
                         ],
                         "Environment": [

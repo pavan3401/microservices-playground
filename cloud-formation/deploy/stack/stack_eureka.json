@@ -72,7 +72,8 @@
 
     },
     "Conditions": {
-        "UseCloudWatch": { "Fn::Equals" : [ { "Ref" : "LogCollector" }, "cloudwatch" ] }
+        "UseCloudWatch": { "Fn::Equals" : [ { "Ref" : "LogCollector" }, "cloudwatch" ] },
+        "UseSumoLogic": { "Fn::Equals" : [ { "Ref" : "LogCollector" }, "sumologic" ] }
     },
     "Resources": {
 
@@ -114,8 +115,9 @@
             }
         },
 
-        "EurekaServerTask": {
+        "EurekaServerCloudWatchTask": {
             "Type": "AWS::ECS::TaskDefinition",
+            "Condition" : "UseCloudWatch",
             "Properties": {
                 "ContainerDefinitions": [
                     {
@@ -140,42 +142,12 @@
                     },
                     {
                         "Name": "logs",
-                        "Image": {
-                            "Fn::If": [
-                                "UseCloudWatch",
-                                {"Fn::Join": ["",[{"Ref": "AccountNumber"},".dkr.ecr.us-east-1.amazonaws.com/microservices/ecs-cloudwatch-logs:latest"]]},
-                                "sumologic/collector:latest-syslog"
-                            ]
-                        },
+                        "Image": {"Fn::Join": ["",[{"Ref": "AccountNumber"},".dkr.ecr.us-east-1.amazonaws.com/microservices/ecs-cloudwatch-logs:latest"]]},
                         "Memory": "64",
                         "MountPoints": [
-                            {"Fn::If": [
-                                "UseCloudWatch",
-                                {
-                                    "SourceVolume": "ecs_instance_logs",
-                                    "ContainerPath":"/mnt/ecs_instance_logs"
-                                },{}
-                                ]
-                            }
-                        ],
-                        "Environment": [
                             {
-                                "Name": "SUMO_ACCESS_ID",
-                                "Value": {
-                                    "Fn::If" : [ "UseCloudWatch",
-                                        { "Ref" : "AWS::NoValue" },
-                                        { "Ref" : "SumoAccessID"}
-                                    ]
-                                }
-                            },
-                            {
-                                "Name": "SUMO_ACCESS_KEY",
-                                "Value": {
-                                    "Fn::If" : [ "UseCloudWatch",
-                                        { "Ref" : "AWS::NoValue" },
-                                        { "Ref" : "SumoAccessKey"}
-                                    ]
-                                }
+                                "SourceVolume": "ecs_instance_logs",
+                                "ContainerPath":"/mnt/ecs_instance_logs"
                             }
                         ]
                     }
@@ -186,6 +158,50 @@
                         "Host": {
                             "SourcePath": "/var/log"
                         }
+                    }
+                ]
+            }
+        },
+
+        "EurekaServerSumoLogicTask": {
+            "Type": "AWS::ECS::TaskDefinition",
+            "Condition" : "UseSumoLogic",
+            "Properties": {
+                "ContainerDefinitions": [
+                    {
+                        "Name": "eureka-server",
+                        "Image": { "Fn::Join" : ["", [{ "Ref" : "AccountNumber" }, ".dkr.ecr.us-east-1.amazonaws.com/microservices/eureka-server:latest"]]},
+                        "Memory": "1024",
+                        "Environment": [
+                            {
+                                "Name": "SPRING_PROFILES_ACTIVE",
+                                "Value": "syslog"
+                            }
+                        ],
+                        "PortMappings": [
+                            {
+                                "HostPort": 8761,
+                                "ContainerPort": 8761
+                            }
+                        ],
+                        "Links": [
+                            "logs"
+                        ]
+                    },
+                    {
+                        "Name": "logs",
+                        "Image": "sumologic/collector:latest-syslog",
+                        "Memory": "64",
+                        "Environment": [
+                            {
+                                "Name": "SUMO_ACCESS_ID",
+                                "Value": { "Ref" : "SumoAccessID"}
+                            },
+                            {
+                                "Name": "SUMO_ACCESS_KEY",
+                                "Value": { "Ref" : "SumoAccessKey"}
+                            }
+                        ]
                     }
                 ]
             }
@@ -211,7 +227,9 @@
                     "Ref": "EcsServiceRole"
                 },
                 "TaskDefinition": {
-                    "Ref": "EurekaServerTask"
+                    "Fn::If": [
+                        "UseCloudWatch",{ "Ref": "EurekaServerCloudWatchTask" },{ "Ref": "EurekaServerSumoLogicTask" }
+                    ]
                 }
             }
         }

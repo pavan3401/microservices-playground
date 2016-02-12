@@ -77,13 +77,15 @@
     },
 
     "Conditions": {
-        "UseCloudWatch": { "Fn::Equals" : [ { "Ref" : "LogCollector" }, "cloudwatch" ] }
+        "UseCloudWatch": { "Fn::Equals" : [ { "Ref" : "LogCollector" }, "cloudwatch" ] },
+        "UseSumoLogic" : { "Fn::Equals" : [ { "Ref" : "LogCollector" }, "sumologic" ] }
     },
 
     "Resources": {
 
-        "ConfigServerTask": {
+        "ConfigServerCloudWatchTask": {
             "Type": "AWS::ECS::TaskDefinition",
+            "Condition" : "UseCloudWatch",
             "Properties": {
                 "ContainerDefinitions": [
                     {
@@ -127,42 +129,12 @@
                     },
                     {
                         "Name": "logs",
-                        "Image": {
-                            "Fn::If": [
-                                "UseCloudWatch",
-                                {"Fn::Join": ["",[{"Ref": "AccountNumber"},".dkr.ecr.us-east-1.amazonaws.com/microservices/ecs-cloudwatch-logs:latest"]]},
-                                "sumologic/collector:latest-syslog"
-                            ]
-                        },
+                        "Image": {"Fn::Join": ["",[{"Ref": "AccountNumber"},".dkr.ecr.us-east-1.amazonaws.com/microservices/ecs-cloudwatch-logs:latest"]]},
                         "Memory": "64",
                         "MountPoints": [
-                            {"Fn::If": [
-                                "UseCloudWatch",
-                                {
-                                    "SourceVolume": "ecs_instance_logs",
-                                    "ContainerPath":"/mnt/ecs_instance_logs"
-                                },{}
-                            ]
-                            }
-                        ],
-                        "Environment": [
                             {
-                                "Name": "SUMO_ACCESS_ID",
-                                "Value": {
-                                    "Fn::If" : [ "UseCloudWatch",
-                                        { "Ref" : "AWS::NoValue" },
-                                        { "Ref" : "SumoAccessID"}
-                                    ]
-                                }
-                            },
-                            {
-                                "Name": "SUMO_ACCESS_KEY",
-                                "Value": {
-                                    "Fn::If" : [ "UseCloudWatch",
-                                        { "Ref" : "AWS::NoValue" },
-                                        { "Ref" : "SumoAccessKey"}
-                                    ]
-                                }
+                                "SourceVolume": "ecs_instance_logs",
+                                "ContainerPath":"/mnt/ecs_instance_logs"
                             }
                         ]
                     }
@@ -178,6 +150,69 @@
             }
         },
 
+        "ConfigServerSumoLogicTask": {
+            "Type": "AWS::ECS::TaskDefinition",
+            "Condition" : "UseSumoLogic",
+            "Properties": {
+                "ContainerDefinitions": [
+                    {
+                        "Name": "config-server",
+                        "Image": { "Fn::Join" : ["", [{ "Ref" : "AccountNumber" }, ".dkr.ecr.us-east-1.amazonaws.com/microservices/config-server:latest"]]},
+                        "Memory": "1024",
+                        "Environment": [
+                            {
+                                "Name": "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE",
+                                "Value": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "http://",
+                                            {
+                                                "Ref" : "EurekaUrl"
+                                            },
+                                            ":8761/eureka/"
+                                        ]
+                                    ]
+                                }
+                            },
+                            {
+                                "Name": "EUREKA_INSTANCE_HOSTNAME",
+                                "Value": "${local-ipv4:N/A}"
+                            },
+                            {
+                                "Name": "SPRING_PROFILES_ACTIVE",
+                                "Value": "syslog"
+                            }
+                        ],
+                        "PortMappings": [
+                            {
+                                "HostPort": 9000,
+                                "ContainerPort": 9000
+                            }
+                        ],
+                        "Links": [
+                            "logs"
+                        ]
+                    },
+                    {
+                        "Name": "logs",
+                        "Image": "sumologic/collector:latest-syslog",
+                        "Memory": "64",
+                        "Environment": [
+                            {
+                                "Name": "SUMO_ACCESS_ID",
+                                "Value": { "Ref" : "SumoAccessID"}
+                            },
+                            {
+                                "Name": "SUMO_ACCESS_KEY",
+                                "Value":  { "Ref" : "SumoAccessKey"}
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+
         "ConfigServerService": {
             "Type": "AWS::ECS::Service",
             "Properties": {
@@ -186,7 +221,9 @@
                 },
                 "DesiredCount": "1",
                 "TaskDefinition": {
-                    "Ref": "ConfigServerTask"
+                    "Fn::If": [
+                        "UseCloudWatch",{ "Ref": "ConfigServerCloudWatchTask" },{ "Ref": "ConfigServerSumoLogicTask" }
+                    ]
                 }
             }
         },
@@ -228,8 +265,9 @@
             }
         },
 
-        "WebappTask": {
+        "WebappCloudWatchTask": {
             "Type": "AWS::ECS::TaskDefinition",
+            "Condition" : "UseCloudWatch",
             "Properties": {
                 "ContainerDefinitions": [
                     {
@@ -281,42 +319,12 @@
                     },
                     {
                         "Name": "logs",
-                        "Image": {
-                            "Fn::If": [
-                                "UseCloudWatch",
-                                {"Fn::Join": ["",[{"Ref": "AccountNumber"},".dkr.ecr.us-east-1.amazonaws.com/microservices/ecs-cloudwatch-logs:latest"]]},
-                                "sumologic/collector:latest-syslog"
-                            ]
-                        },
+                        "Image": {"Fn::Join": ["",[{"Ref": "AccountNumber"},".dkr.ecr.us-east-1.amazonaws.com/microservices/ecs-cloudwatch-logs:latest"]]},
                         "Memory": "64",
                         "MountPoints": [
-                            {"Fn::If": [
-                                "UseCloudWatch",
-                                {
-                                    "SourceVolume": "ecs_instance_logs",
-                                    "ContainerPath":"/mnt/ecs_instance_logs"
-                                },{}
-                            ]
-                            }
-                        ],
-                        "Environment": [
                             {
-                                "Name": "SUMO_ACCESS_ID",
-                                "Value": {
-                                    "Fn::If" : [ "UseCloudWatch",
-                                        { "Ref" : "AWS::NoValue" },
-                                        { "Ref" : "SumoAccessID"}
-                                    ]
-                                }
-                            },
-                            {
-                                "Name": "SUMO_ACCESS_KEY",
-                                "Value": {
-                                    "Fn::If" : [ "UseCloudWatch",
-                                        { "Ref" : "AWS::NoValue" },
-                                        { "Ref" : "SumoAccessKey"}
-                                    ]
-                                }
+                                "SourceVolume": "ecs_instance_logs",
+                                "ContainerPath":"/mnt/ecs_instance_logs"
                             }
                         ]
                     }
@@ -327,6 +335,77 @@
                         "Host": {
                             "SourcePath": "/var/log"
                         }
+                    }
+                ]
+            }
+        },
+
+        "WebappSumoLogicTask": {
+            "Type": "AWS::ECS::TaskDefinition",
+            "Condition" : "UseSumoLogic",
+            "Properties": {
+                "ContainerDefinitions": [
+                    {
+                        "Name": "webapp",
+                        "Image": { "Fn::Join" : ["", [{ "Ref" : "AccountNumber" }, ".dkr.ecr.us-east-1.amazonaws.com/microservices/webapp:latest"]]},
+                        "Memory": "1024",
+                        "Environment": [
+                            {
+                                "Name": "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE",
+                                "Value": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "http://",
+                                            {
+                                                "Ref" : "EurekaUrl"
+                                            },
+                                            ":8761/eureka/"
+                                        ]
+                                    ]
+                                }
+                            },
+                            {
+                                "Name": "EUREKA_INSTANCE_HOSTNAME",
+                                "Value": "${local-ipv4:N/A}"
+                            },
+                            {
+                                "Name": "SPRING_CLOUD_CONFIG_DISCOVERY_ENABLED",
+                                "Value": "true"
+                            },
+                            {
+                                "Name": "SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID",
+                                "Value": "config-server"
+                            },
+                            {
+                                "Name": "SPRING_PROFILES_ACTIVE",
+                                "Value": "syslog"
+                            }
+                        ],
+                        "PortMappings": [
+                            {
+                                "HostPort": 80,
+                                "ContainerPort": 8080
+                            }
+                        ],
+                        "Links": [
+                            "logs"
+                        ]
+                    },
+                    {
+                        "Name": "logs",
+                        "Image": "sumologic/collector:latest-syslog",
+                        "Memory": "64",
+                        "Environment": [
+                            {
+                                "Name": "SUMO_ACCESS_ID",
+                                "Value": { "Ref" : "SumoAccessID"}
+                            },
+                            {
+                                "Name": "SUMO_ACCESS_KEY",
+                                "Value": { "Ref" : "SumoAccessKey"}
+                            }
+                        ]
                     }
                 ]
             }
@@ -353,13 +432,16 @@
                     "Ref": "EcsServiceRole"
                 },
                 "TaskDefinition": {
-                    "Ref": "WebappTask"
+                    "Fn::If": [
+                        "UseCloudWatch",{ "Ref": "WebappCloudWatchTask" },{ "Ref": "WebappSumoLogicTask" }
+                    ]
                 }
             }
         },
 
-        "WeatherServiceTask": {
+        "WeatherServiceCloudWatchTask": {
             "Type": "AWS::ECS::TaskDefinition",
+            "Condition" : "UseCloudWatch",
             "Properties": {
                 "ContainerDefinitions": [
                     {
@@ -411,42 +493,12 @@
                     },
                     {
                         "Name": "logs",
-                        "Image": {
-                            "Fn::If": [
-                                "UseCloudWatch",
-                                {"Fn::Join": ["",[{"Ref": "AccountNumber"},".dkr.ecr.us-east-1.amazonaws.com/microservices/ecs-cloudwatch-logs:latest"]]},
-                                "sumologic/collector:latest-syslog"
-                            ]
-                        },
+                        "Image": {"Fn::Join": ["",[{"Ref": "AccountNumber"},".dkr.ecr.us-east-1.amazonaws.com/microservices/ecs-cloudwatch-logs:latest"]]},
                         "Memory": "64",
                         "MountPoints": [
-                            {"Fn::If": [
-                                "UseCloudWatch",
-                                {
-                                    "SourceVolume": "ecs_instance_logs",
-                                    "ContainerPath":"/mnt/ecs_instance_logs"
-                                },{}
-                            ]
-                            }
-                        ],
-                        "Environment": [
                             {
-                                "Name": "SUMO_ACCESS_ID",
-                                "Value": {
-                                    "Fn::If" : [ "UseCloudWatch",
-                                        { "Ref" : "AWS::NoValue" },
-                                        { "Ref" : "SumoAccessID"}
-                                    ]
-                                }
-                            },
-                            {
-                                "Name": "SUMO_ACCESS_KEY",
-                                "Value": {
-                                    "Fn::If" : [ "UseCloudWatch",
-                                        { "Ref" : "AWS::NoValue" },
-                                        { "Ref" : "SumoAccessKey"}
-                                    ]
-                                }
+                                "SourceVolume": "ecs_instance_logs",
+                                "ContainerPath":"/mnt/ecs_instance_logs"
                             }
                         ]
                     }
@@ -462,6 +514,77 @@
             }
         },
 
+        "WeatherServiceSumoLogicTask": {
+            "Type": "AWS::ECS::TaskDefinition",
+            "Condition" : "UseSumoLogic",
+            "Properties": {
+                "ContainerDefinitions": [
+                    {
+                        "Name": "service",
+                        "Image": { "Fn::Join" : ["", [{ "Ref" : "AccountNumber" }, ".dkr.ecr.us-east-1.amazonaws.com/microservices/weather-service:latest"]]},
+                        "Memory": "1024",
+                        "Environment": [
+                            {
+                                "Name": "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE",
+                                "Value": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "http://",
+                                            {
+                                                "Ref" : "EurekaUrl"
+                                            },
+                                            ":8761/eureka/"
+                                        ]
+                                    ]
+                                }
+                            },
+                            {
+                                "Name": "EUREKA_INSTANCE_HOSTNAME",
+                                "Value": "${local-ipv4:N/A}"
+                            },
+                            {
+                                "Name": "SPRING_CLOUD_CONFIG_DISCOVERY_ENABLED",
+                                "Value": "true"
+                            },
+                            {
+                                "Name": "SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID",
+                                "Value": "config-server"
+                            },
+                            {
+                                "Name": "SPRING_PROFILES_ACTIVE",
+                                "Value": "syslog"
+                            }
+                        ],
+                        "PortMappings": [
+                            {
+                                "HostPort": 8081,
+                                "ContainerPort": 8081
+                            }
+                        ],
+                        "Links": [
+                            "logs"
+                        ]
+                    },
+                    {
+                        "Name": "logs",
+                        "Image": "sumologic/collector:latest-syslog",
+                        "Memory": "64",
+                        "Environment": [
+                            {
+                                "Name": "SUMO_ACCESS_ID",
+                                "Value": { "Ref" : "SumoAccessID"}
+                            },
+                            {
+                                "Name": "SUMO_ACCESS_KEY",
+                                "Value": { "Ref" : "SumoAccessKey"}
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+
         "WeatherServiceService": {
             "Type": "AWS::ECS::Service",
             "DependsOn": [ "ConfigServerService" ],
@@ -471,7 +594,9 @@
                 },
                 "DesiredCount": "1",
                 "TaskDefinition": {
-                    "Ref": "WeatherServiceTask"
+                    "Fn::If": [
+                        "UseCloudWatch",{ "Ref": "WeatherServiceCloudWatchTask" },{ "Ref": "WeatherServiceSumoLogicTask" }
+                    ]
                 }
             }
         }

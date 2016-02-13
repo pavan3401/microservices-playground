@@ -197,7 +197,7 @@
                     {
                         "Name": "logs",
                         "Image": "sumologic/collector:latest-syslog",
-                        "Memory": "64",
+                        "Memory": "128",
                         "Environment": [
                             {
                                 "Name": "SUMO_ACCESS_ID",
@@ -405,7 +405,7 @@
                     {
                         "Name": "logs",
                         "Image": "sumologic/collector:latest-syslog",
-                        "Memory": "64",
+                        "Memory": "128",
                         "Environment": [
                             {
                                 "Name": "SUMO_ACCESS_ID",
@@ -589,7 +589,7 @@
                     {
                         "Name": "logs",
                         "Image": "sumologic/collector:latest-syslog",
-                        "Memory": "64",
+                        "Memory": "128",
                         "Environment": [
                             {
                                 "Name": "SUMO_ACCESS_ID",

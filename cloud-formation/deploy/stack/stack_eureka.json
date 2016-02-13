@@ -190,8 +190,8 @@
                     },
                     {
                         "Name": "logs",
-                        "Image": "sumologic/collector:latest-file",
-                        "Memory": "64",
+                        "Image": "sumologic/collector:latest-syslog",
+                        "Memory": "128",
                         "Environment": [
                             {
                                 "Name": "SUMO_ACCESS_ID",
@@ -206,21 +206,12 @@
                                 "Value" : "SyslogCollector"
                             }
                         ],
-                        "MountPoints": [
+                        "PortMappings": [
                             {
-                                "SourceVolume": "ecs_instance_logs",
-                                "ContainerPath":"/mnt/ecs_instance_logs"
+                                "HostPort": 514,
+                                "ContainerPort": 514
                             }
                         ]
-
-                    }
-                ],
-                "Volumes": [
-                    {
-                        "Name": "ecs_instance_logs",
-                        "Host": {
-                            "SourcePath": "/var/log"
-                        }
                     }
                 ]
             }

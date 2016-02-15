@@ -10,8 +10,8 @@ workflowJob("$basePath/1. pre-configure") {
     }
 
     parameters {
-        stringParam('GIT_URL' , "$gitUrl")
-        stringParam('BUCKET_NAME', 'eliza-eureka')
+        stringParam('GIT_URL' , "$gitUrl", 'Git repository url of your application.')
+        stringParam('BUCKET_NAME', 'eliza-eureka', 'Bucket name to receive cloud formation templates.')
     }
 
     definition {
@@ -28,11 +28,11 @@ workflowJob("$basePath/2. create-deployment") {
     }
 
     parameters {
-        stringParam('GIT_URL' , "$gitUrl")
-        stringParam('BUCKET_NAME', 'eliza-eureka')
-        stringParam('KEY_NAME', 'eureka')
-        stringParam('HOSTED_ZONE_NAME', 'goe3.ca')
-        stringParam('LOG_COLLECTOR', 'cloudwatch')
+        stringParam('GIT_URL' , "$gitUrl", 'Git repository url of your application.')
+        stringParam('BUCKET_NAME', 'eliza-eureka', 'Bucket name to receive cloud formation templates.')
+        stringParam('KEY_NAME', 'eureka', 'AWS .pem key used to create resources.')
+        stringParam('HOSTED_ZONE_NAME', 'goe3.ca', 'Domain Name for your Application.')
+        choiceParam('LOG_COLLECTOR', ['cloudwatch', 'sumologic'], 'Log Collector to use.')
     }
 
     definition {
@@ -53,7 +53,7 @@ workflowJob("$basePath/3. update-weather-service") {
     }
 
     parameters {
-        stringParam('GIT_URL' , "$gitUrl")
+        stringParam('GIT_URL' , "$gitUrl", 'Git repository url of your application.')
     }
 
     definition {

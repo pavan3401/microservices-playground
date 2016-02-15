@@ -125,6 +125,14 @@ if [ $ENVIRONMENT == false ]; then
     exit 1
 fi
 
+echo -e "--------------------------------------"
+echo -e "Image Tag: ${IMAGE_TAG}"
+echo -e "Service Name: ${SERVICE_NAME}"
+echo -e "Service Repository: ${SERVICE_REPOSITORY_NAME}"
+echo -e "Environment: ${ENVIRONMENT}"
+echo -e "Timeout: ${TIMEOUT}"
+echo -e "--------------------------------------\n"
+
 
 TAG_ESCAPED=$(echo "${IMAGE_TAG}" | sed -e 's/\\/\\\\/g' -e 's/\//\\\//g' -e 's/&/\\\&/g')
 
@@ -165,7 +173,7 @@ echo -e "ClusterArn: ${CLUSTER_ARN}"
 echo -e "ServiceArn: ${SERVICE_ARN}"
 echo -e "Revision: ${TASK_REVISION}"
 echo -e "Count: ${DESIRED_COUNT} "
-echo -e "--------------------------------------"
+echo -e "--------------------------------------\n"
 
 # Update the service with the new task definition and desired count
 aws ecs update-service --cluster "${CLUSTER_ARN}" --service "${SERVICE_ARN}" --task-definition "${TASK_FAMILY}:${TASK_REVISION}" --desired-count "${DESIRED_COUNT}"
@@ -187,10 +195,15 @@ do
   RUNNING=$(aws ecs list-tasks --cluster "${CLUSTER_ARN}"  --service-name "${SERVICE_ARN}" --desired-status RUNNING \
     | jq '.taskArns[]' \
     | xargs -I{} aws ecs describe-tasks --cluster ${CLUSTER_ARN} --tasks {} \
-    | jq ".tasks[]| if .taskDefinitionArn == \"${NEW_TASKDEF_ARN}\" then . else empty end|.lastStatus" \
-    | grep -e "RUNNING" )
+    | jq ".tasks[]| if .taskDefinitionArn == \"${NEW_TASKDEF_ARN}\" then . else empty end|.lastStatus" | cut -d'"' -f2 )
 
-  if [ "${RUNNING}" ]; then
+  if [ -z "${RUNNING}" ]; then
+     echo "status = PENDING"
+  else
+    echo "status = ${RUNNING}"
+  fi
+
+  if [ "${RUNNING}" == "RUNNING" ]; then
     echo "Service updated successfully, new task definition running."
     exit 0
   fi
@@ -200,5 +213,5 @@ do
 done
 
 # Timeout
-echo "ERROR: New task definition not running within $TIMEOUT seconds"
+echo "ERROR: New task definition not running within ${TIMEOUT} seconds"
 exit 1

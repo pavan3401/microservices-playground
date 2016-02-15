@@ -48,7 +48,7 @@ def buildService() {
 
 def deployService(service, environment) {
     def command = 'cd pipeline/resources\n' +
-        '/bin/bash ./update-service.sh ' + './' + service + '.json '  + env.AWS_TAG + ' ' + environment + ' ' + service
+        '/bin/bash ./update-service.sh ' + env.TAG_LIST + ' ' + environment + ' ' + service + ' ' + repository
     sh command
 }
 

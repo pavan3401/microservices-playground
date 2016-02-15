@@ -13,7 +13,7 @@ This is a simple weather app. It demonstrates solutions for common microservice 
 ### Running locally with docker compose
 1. Build jars and docker containers:
 ```mvn clean package install```
-2. Run eureka-server, config-server, webapp and weather-service
+2. Bake docker images and run containers: eureka-server, config-server, webapp and weather-service
 ```docker-compose up```
 
 ### Running on EC2 Container Service (Create CloudFormation stack):
@@ -24,4 +24,4 @@ This is a simple weather app. It demonstrates solutions for common microservice 
 ```sh ./pre-configure.sh <bucketName>
 3. Create AWS resources and deploy containers in ECS cluster
 ```cd ./cloud-formation/deploy/```
-```sh ./create-deployment.sh <bucketName> <keyName> <hostedZoneName>```
+```sh ./create-deployment.sh <bucketName> <keyName> <hostedZoneName> <logCollector clouwatch|sumologic>```

@@ -48,7 +48,7 @@ def buildService() {
 
 def deployService(service, environment, repository) {
     def command = 'cd pipeline/resources\n' +
-        '/bin/bash ./update-service.sh ' + env.TAG_LIST + ' ' + environment + ' ' + service + ' ' + repository
+        '/bin/bash ./update-service.sh --image-tag ' + env.TAG_LIST + ' --environment ' + environment + '  --service-name ' + service + ' --repository-name ' + repository
     sh command
 }
 

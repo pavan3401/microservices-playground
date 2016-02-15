@@ -209,7 +209,7 @@
                             },
                             {
                                 "Name": "SUMO_COLLECTOR_NAME",
-                                "Value" : "SyslogCollector"
+                                "Value" : {"Fn::Join": ["",[ {"Ref": "Environment"}, "-ConfigServer" ]]}
                             }
                         ],
                         "PortMappings": [
@@ -417,7 +417,7 @@
                             },
                             {
                                 "Name": "SUMO_COLLECTOR_NAME",
-                                "Value" : "SyslogCollector"
+                                "Value" : {"Fn::Join": ["",[ {"Ref": "Environment"}, "-WebApp" ]]}
                             }
                         ],
                         "PortMappings": [
@@ -601,7 +601,7 @@
                             },
                             {
                                 "Name": "SUMO_COLLECTOR_NAME",
-                                "Value" : "SyslogCollector"
+                                "Value" : {"Fn::Join": ["",[ {"Ref": "Environment"}, "-WeatherService" ]]}
                             }
                         ],
                         "PortMappings": [

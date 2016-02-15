@@ -203,7 +203,7 @@
                             },
                             {
                                 "Name": "SUMO_COLLECTOR_NAME",
-                                "Value" : "SyslogCollector"
+                                "Value" : {"Fn::Join": ["",[ {"Ref": "Environment"}, "-Eureka" ]]}
                             }
                         ],
                         "PortMappings": [

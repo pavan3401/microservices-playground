@@ -1,17 +1,132 @@
 #!/bin/bash
 
-USAGE="usage: ./update-service.sh <imageTag> <environment> <serviceName> <serviceRepositoryName>"
-if [ "$#" -lt 4 ] ; then
+# Exit this bash script on any error
+set -e
+
+# Get the script name from its filename in the path
+SCRIPT_NAME=$(basename "${BASH_SOURCE[0]}")
+
+# Get the script version from git when available or otherwise default to 0.1.0
+SCRIPT_VERSION="$(git describe --long --match [0-9]* 2>/dev/null || echo 0.1.0)"
+
+# Usage to be displayed when using -h, --help or any invalid option
+USAGE="NAME
+    $SCRIPT_NAME - Update the service with the new version
+
+SYNOPSIS
+    $SCRIPT_NAME [options]
+
+DESCRIPTION
+    $SCRIPT_NAME is a script to update the running service with a new version.
+
+    This script is creating a new AWS Task Definition and Update the Service with it.
+    It will trigger blue/green deployments on Amazon Elastic Container Service for that Service.
+
+OPTIONS
+    Options start with one or two dashes.
+    Many of the options require an additional value next to them.
+
+    The short 'single-dash' form of the options, -h for example,
+    may be used with or without a space between it and its value,
+    although a space is a recommended separator.
+
+    The long 'double-dash' form of the options, --help for example,
+    requires a space between it and its value.
+
+    Short version options that don't need any additional values
+    can be used immediately next to each other, for example
+    all the options -x, -Y and -z can be specified at once as -xYz.
+
+    -i | --image-tag <tag>
+        The new docker image tag. (Mandatory)
+    -e | --environment <environment>
+        Environment in which the service is running. (Mandatory)
+    -n | --service-name <name>
+        Name of service to deploy. (Mandatory)
+    -r | --repository-name <repository>
+        Repository name of the service. (Mandatory)
+    -t | --timeout <value>
+        The timeout (in seconds) to wait for the service to come up. Default 120 seconds. (Optional)
+    -h, --help
+        Show this script usage information then exit successfully.
+    -v, --version
+        Only output version information then exit successfully.
+
+EXAMPLE
+    ./update-service.sh --image-tag 1.0-e65e3cad-latest --environment microservice-test --service-name WeatherService --repository-name weather-service
+"
+
+if [ "$#" == 0 ] ; then
   echo "${USAGE}"
   exit 1
 fi
 
-IMAGE_TAG=$1
-ENVIRONMENT=$2
-SERVICE_NAME=$3
-SERVICE_REPOSITORY_NAME=$4
-TAG_ESCAPED=$(echo "${IMAGE_TAG}" | sed -e 's/\\/\\\\/g' -e 's/\//\\\//g' -e 's/&/\\\&/g')
+# Setup default values for variables
+IMAGE_TAG=false
+ENVIRONMENT=false
+SERVICE_NAME=false
+SERVICE_REPOSITORY_NAME=false
 TIMEOUT=120
+
+# Loop through arguments, two at a time for key and value
+while [[ $# > 0 ]]
+do
+    key="$1"
+
+    case $key in
+	    -e|--environment)
+	        ENVIRONMENT="$2"
+	        shift # past argument
+	        ;;
+        -r|--repository-name)
+            SERVICE_REPOSITORY_NAME="$2"
+            shift # past argument
+            ;;
+        -n|--service-name)
+            SERVICE_NAME="$2"
+            shift # past argument
+            ;;
+        -i|--image-tag)
+            IMAGE_TAG="$2"
+            shift
+            ;;
+        -t|--timeout)
+            TIMEOUT="$2"
+            shift
+            ;;
+        -h)
+            echo "${USAGE}"
+            exit 0;;
+        -v)
+            echo "${SCRIPT_NAME} version ${SCRIPT_VERSION}"
+            exit 0;;
+        *)
+            echo "${USAGE}"
+            exit 2
+        ;;
+    esac
+    shift # past argument or value
+done
+
+if [ $SERVICE_REPOSITORY_NAME == false ]; then
+    echo "SERVICE REPOSITORY NAME is required. You can pass the value using -r or --repository-name"
+    exit 1
+fi
+if [ $SERVICE_NAME == false ]; then
+    echo "SERVICE NAME is required. You can pass the value using -n or --service-name"
+    exit 1
+fi
+if [ $IMAGE_TAG == false ]; then
+    echo "IMAGE TAG is required. You can pass the value using -i or --image-tag"
+    exit 1
+fi
+if [ $ENVIRONMENT == false ]; then
+    echo "ENVIRONMENT is required. You can pass the value using -e or --environment"
+    exit 1
+fi
+
+
+TAG_ESCAPED=$(echo "${IMAGE_TAG}" | sed -e 's/\\/\\\\/g' -e 's/\//\\\//g' -e 's/&/\\\&/g')
 
 # Retrieve 'Task Id', 'Task Definition, 'Task Family', 'Cluster' and 'Service Id' of the service to update
 TASK_ARN=$(aws ecs list-task-definitions --status ACTIVE --sort DESC | jq '.taskDefinitionArns[]' \

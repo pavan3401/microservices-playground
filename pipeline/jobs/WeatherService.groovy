@@ -38,7 +38,7 @@ node {
 
     stage "Deploy Service to ECS" // ------------------------------
 
-    deployService(service, environment)
+    deployService(service, environment, repository)
 }
 
 def buildService() {
@@ -46,7 +46,7 @@ def buildService() {
     sh command
 }
 
-def deployService(service, environment) {
+def deployService(service, environment, repository) {
     def command = 'cd pipeline/resources\n' +
         '/bin/bash ./update-service.sh ' + env.TAG_LIST + ' ' + environment + ' ' + service + ' ' + repository
     sh command

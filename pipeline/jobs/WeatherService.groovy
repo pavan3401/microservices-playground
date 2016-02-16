@@ -24,6 +24,8 @@ node {
       buildService()
     }
 
+    step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/*.xml'])
+
     stage "Bake Service's Docker image" // ------------------------
 
     // Bake the Docker Image
@@ -48,7 +50,8 @@ def buildService() {
 
 def deployService(service, environment, repository) {
     def command = 'cd pipeline/resources\n' +
-        '/bin/bash ./update-service.sh --image-tag ' + env.TAG_LIST + ' --environment ' + environment + '  --service-name ' + service + ' --repository-name ' + repository
+        '/bin/bash ./update-service.sh --image-tag ' + env.TAG_LIST +
+        ' --environment ' + environment + '  --service-name ' + service + ' --repository-name ' + repository
     sh command
 }
 

@@ -73,6 +73,11 @@
         "Environment" : {
             "Description" : "Environment for this deployment",
             "Type" : "String"
+        },
+
+        "NewRelicLicenseKey" : {
+            "Description" : "NewRelic Licence Key",
+            "Type" : "String"
         }
     },
 
@@ -160,6 +165,14 @@
             "Metadata": {
                 "AWS::CloudFormation::Init": {
                     "config": {
+                        "packages" : {
+                            "rpm" : {
+                                "newrelic" : "https://yum.newrelic.com/pub/newrelic/el5/x86_64/newrelic-repo-5-3.noarch.rpm"
+                            },
+                            "yum" : {
+                                "newrelic-sysmond": []
+                            }
+                        },
                         "commands": {
                             "01_add_instance_to_cluster": {
                                 "command": {
@@ -175,6 +188,12 @@
                                         ]
                                     ]
                                 }
+                            },
+                            "02_set_newrelic_license" : {
+                                "command" : {"Fn::Join": ["",["nrsysmond-config --set license_key=", {"Ref" :"NewRelicLicenseKey"} ]] }
+                            },
+                            "03_start_newrelic" : {
+                                "command" : "/etc/init.d/newrelic-sysmond start"
                             }
                         },
                         "files": {

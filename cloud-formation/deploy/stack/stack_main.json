@@ -124,6 +124,12 @@
             "Description": "Summo Access Key",
             "Type": "String",
             "Default" : ""
+        },
+
+        "NewRelicLicenseKey": {
+            "Description": "New Relic License Key",
+            "Type": "String",
+            "Default" : ""
         }
 
     },
@@ -931,7 +937,8 @@
                     "EcsSecurityGroup" : { "Ref" : "EcsSecurityGroup" },
                     "EurekaServerLoadBalancerSecurityGroup" : { "Ref" : "EurekaServerLoadBalancerSecurityGroup" },
                     "WebappLoadBalancerSecurityGroup" : { "Ref" : "WebappLoadBalancerSecurityGroup" },
-                    "VpcId" : { "Ref" : "VPC"}
+                    "VpcId" : { "Ref" : "VPC" },
+                    "NewRelicLicenseKey" : { "Ref" : "NewRelicLicenseKey" }
                 }
             }
         },

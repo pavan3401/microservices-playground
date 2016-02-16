@@ -9,6 +9,8 @@ node {
       sh 'mvn clean package'
     }
 
+    step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/*.xml'])
+
     stage "Pre-configure" // --------------------------------------
 
     preConfigure(BUCKET_NAME)

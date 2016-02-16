@@ -192,7 +192,10 @@
                             "02_set_newrelic_license" : {
                                 "command" : {"Fn::Join": ["",["nrsysmond-config --set license_key=", {"Ref" :"NewRelicLicenseKey"} ]] }
                             },
-                            "03_start_newrelic" : {
+                            "03_add_newrelic_user_to_docker_group" : {
+                                "command" : "usermod -a -G docker newrelic"
+                            },
+                            "04_start_newrelic" : {
                                 "command" : "/etc/init.d/newrelic-sysmond start"
                             }
                         },

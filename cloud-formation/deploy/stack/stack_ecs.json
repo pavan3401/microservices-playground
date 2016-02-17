@@ -196,7 +196,13 @@
                                 "command" : "usermod -a -G docker newrelic"
                             },
                             "04_configure_newrelic" : {
-                                "command" : {"Fn::Join": ["", ["echo hostname=", {"Ref" : "Environment"}, "-","${local-ipv4:N/A}"," >> /etc/newrelic/nrsysmond.cfg" ]]}
+                                "command" : {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "#!/bin/bash\n",
+                                            "HOSTNAME=$(/usr/bin/curl -s http://169.254.169.254/latest/meta-data/local-ipv4)\n",
+                                            "echo hostname=", {"Ref" : "Environment"}, "-$HOSTNAME", " >> /etc/newrelic/nrsysmond.cfg" ]]}
                             } ,
                             "05_start_newrelic" : {
                                 "command" : "/etc/init.d/newrelic-sysmond start"

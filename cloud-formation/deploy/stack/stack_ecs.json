@@ -195,7 +195,10 @@
                             "03_add_newrelic_user_to_docker_group" : {
                                 "command" : "usermod -a -G docker newrelic"
                             },
-                            "04_start_newrelic" : {
+                            "04_configure_newrelic" : {
+                                "command" : {"Fn::Join": ["", ["echo hostname=", {"Ref" : "Environment"}, "-","${local-ipv4:N/A}"," >> /etc/newrelic/nrsysmond.cfg" ]]}
+                            } ,
+                            "05_start_newrelic" : {
                                 "command" : "/etc/init.d/newrelic-sysmond start"
                             }
                         },
@@ -257,6 +260,10 @@
                                         "/etc/cfn/cfn-hup.conf",
                                         "/etc/cfn/hooks.d/cfn-auto-reloader.conf"
                                     ]
+                                },
+                                "newrelic-sysmond": {
+                                    "enabled": "true",
+                                    "ensureRunning": "true"
                                 }
                             }
                         }

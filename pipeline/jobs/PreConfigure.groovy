@@ -5,7 +5,6 @@ node {
 
     // Build all the services with maven
     docker.image('maven:3.3.3-jdk-8').inside {
-      sh 'ls -l'
       sh 'mvn clean package'
     }
 

@@ -66,7 +66,7 @@ IMAGE_TAG=false
 ENVIRONMENT=false
 SERVICE_NAME=false
 SERVICE_REPOSITORY_NAME=false
-TIMEOUT=120
+TIMEOUT=300
 
 # Loop through arguments, two at a time for key and value
 while [[ $# > 0 ]]

@@ -203,32 +203,32 @@ echo -e "\n\n\nThe \"${ENV}\" environment will be created."
 
 
 # Global Variables
-#STACK_NAME=$ENV-$(date +%m-%d-%y-%H%M)
-#RELEASE=test
-#
-## Upload on S3 the templates
-#aws s3 cp ./stack/ s3://"${BUCKET_NAME}"/deploy/stack/ --recursive --grants read=uri=http://acs.amazonaws.com/groups/global/AuthenticatedUsers
-#
-#
-## Create Stack in AWS
-#echo "Create : ${STACK_NAME}"
-#echo $ENV
-#echo -e "Create Stack ${STACK_NAME}\n"
-#aws cloudformation create-stack --stack-name "${STACK_NAME}" --template-url  https://s3.amazonaws.com/"${BUCKET_NAME}"/deploy/stack/stack_main.json \
-#--parameters ParameterKey=KeyName,ParameterValue="${KEY_NAME}" \
-#ParameterKey=Release,ParameterValue="${RELEASE}" \
-#ParameterKey=AccountNumber,ParameterValue="${AWS_ACCOUNT_NUMBER}" \
-#ParameterKey=HostedZone,ParameterValue="${HOSTED_ZONE_NAME}" \
-#ParameterKey=ConfigBucketName,ParameterValue="${BUCKET_NAME}" \
-#ParameterKey=LogCollector,ParameterValue="${LOG_COLLECTOR}" \
-#ParameterKey=SumoAccessID,ParameterValue="${SUMO_ACCESS_ID}" \
-#ParameterKey=SumoAccessKey,ParameterValue="${SUMO_ACCESS_KEY}" \
-#ParameterKey=NewRelicLicenseKey,ParameterValue="${NEWRELIC_LICENSE_KEY}" \
-#ParameterKey=Environment,ParameterValue="${ENV}" --capabilities CAPABILITY_IAM --disable-rollback
-#
-## Check Stack Status
-#COMMAND="aws cloudformation describe-stacks --stack-name ${STACK_NAME} | jq  '.Stacks[0].StackStatus' |  cut -d \"\\\"\" -f2"
-#checkStackStatus "create stack" "CREATE_COMPLETE" 45 "$COMMAND"
-#
-#echo "Stack created... displaying info"
-#aws cloudformation describe-stacks --stack-name "${STACK_NAME}"
+STACK_NAME=$ENV-$(date +%m-%d-%y-%H%M)
+RELEASE=test
+
+# Upload on S3 the templates
+aws s3 cp ./stack/ s3://"${BUCKET_NAME}"/deploy/stack/ --recursive --grants read=uri=http://acs.amazonaws.com/groups/global/AuthenticatedUsers
+
+
+# Create Stack in AWS
+echo "Create : ${STACK_NAME}"
+echo $ENV
+echo -e "Create Stack ${STACK_NAME}\n"
+aws cloudformation create-stack --stack-name "${STACK_NAME}" --template-url  https://s3.amazonaws.com/"${BUCKET_NAME}"/deploy/stack/stack_main.json \
+--parameters ParameterKey=KeyName,ParameterValue="${KEY_NAME}" \
+ParameterKey=Release,ParameterValue="${RELEASE}" \
+ParameterKey=AccountNumber,ParameterValue="${AWS_ACCOUNT_NUMBER}" \
+ParameterKey=HostedZone,ParameterValue="${HOSTED_ZONE_NAME}" \
+ParameterKey=ConfigBucketName,ParameterValue="${BUCKET_NAME}" \
+ParameterKey=LogCollector,ParameterValue="${LOG_COLLECTOR}" \
+ParameterKey=SumoAccessID,ParameterValue="${SUMO_ACCESS_ID}" \
+ParameterKey=SumoAccessKey,ParameterValue="${SUMO_ACCESS_KEY}" \
+ParameterKey=NewRelicLicenseKey,ParameterValue="${NEWRELIC_LICENSE_KEY}" \
+ParameterKey=Environment,ParameterValue="${ENV}" --capabilities CAPABILITY_IAM --disable-rollback
+
+# Check Stack Status
+COMMAND="aws cloudformation describe-stacks --stack-name ${STACK_NAME} | jq  '.Stacks[0].StackStatus' |  cut -d \"\\\"\" -f2"
+checkStackStatus "create stack" "CREATE_COMPLETE" 45 "$COMMAND"
+
+echo "Stack created... displaying info"
+aws cloudformation describe-stacks --stack-name "${STACK_NAME}"

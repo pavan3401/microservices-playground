@@ -146,13 +146,15 @@ if [ "${LOG_COLLECTOR}" == false ]; then
     echo "Error: LOG_COLLECTOR is required. You can pass the value using -c or --log-collector"
     exit 1
 fi
-if  [[ ! "${LOG_COLLECTOR}" =~ ^(cloudwatch|sumologi) ]]; then
+if  [[ ! "${LOG_COLLECTOR}" =~ ^(cloudwatch|sumologic) ]]; then
     echo "Error: LOG_COLLECTOR should be a string set to either 'cloudwatch' or 'sumologic'"
     exit 1
 fi
-if [[ "${LOG_COLLECTOR}" =~ ^sumologic ]]  && [[ -z "${SUMO_ACCESS_ID}" ]] || [[ -z "${SUMO_ACCESS_KEY}" ]]; then
-    echo "Error: When choosing sumologic as the LOG_COLLECTOR you should provide the Sumo Access Id & Key of the account, options -i and -a"
-    exit 1
+if [[ "${LOG_COLLECTOR}" =~ ^sumologic ]]; then
+    if [[ -z "${SUMO_ACCESS_ID}" ]] || [[ -z "${SUMO_ACCESS_KEY}" ]]; then
+        echo "Error: When choosing sumologic as the LOG_COLLECTOR you should provide the Sumo Access Id & Key of the account, options -i and -a"
+        exit 1
+    fi
 fi
 
 
@@ -201,32 +203,32 @@ echo -e "\n\n\nThe \"${ENV}\" environment will be created."
 
 
 # Global Variables
-STACK_NAME=$ENV-$(date +%m-%d-%y-%H%M)
-RELEASE=test
-
-# Upload on S3 the templates
-aws s3 cp ./stack/ s3://"${BUCKET_NAME}"/deploy/stack/ --recursive --grants read=uri=http://acs.amazonaws.com/groups/global/AuthenticatedUsers
-
-
-# Create Stack in AWS
-echo "Create : ${STACK_NAME}"
-echo $ENV
-echo -e "Create Stack ${STACK_NAME}\n"
-aws cloudformation create-stack --stack-name "${STACK_NAME}" --template-url  https://s3.amazonaws.com/"${BUCKET_NAME}"/deploy/stack/stack_main.json \
---parameters ParameterKey=KeyName,ParameterValue="${KEY_NAME}" \
-ParameterKey=Release,ParameterValue="${RELEASE}" \
-ParameterKey=AccountNumber,ParameterValue="${AWS_ACCOUNT_NUMBER}" \
-ParameterKey=HostedZone,ParameterValue="${HOSTED_ZONE_NAME}" \
-ParameterKey=ConfigBucketName,ParameterValue="${BUCKET_NAME}" \
-ParameterKey=LogCollector,ParameterValue="${LOG_COLLECTOR}" \
-ParameterKey=SumoAccessID,ParameterValue="${SUMO_ACCESS_ID}" \
-ParameterKey=SumoAccessKey,ParameterValue="${SUMO_ACCESS_KEY}" \
-ParameterKey=NewRelicLicenseKey,ParameterValue="${NEWRELIC_LICENSE_KEY}" \
-ParameterKey=Environment,ParameterValue="${ENV}" --capabilities CAPABILITY_IAM --disable-rollback
-
-# Check Stack Status
-COMMAND="aws cloudformation describe-stacks --stack-name ${STACK_NAME} | jq  '.Stacks[0].StackStatus' |  cut -d \"\\\"\" -f2"
-checkStackStatus "create stack" "CREATE_COMPLETE" 45 "$COMMAND"
-
-echo "Stack created... displaying info"
-aws cloudformation describe-stacks --stack-name "${STACK_NAME}"
+#STACK_NAME=$ENV-$(date +%m-%d-%y-%H%M)
+#RELEASE=test
+#
+## Upload on S3 the templates
+#aws s3 cp ./stack/ s3://"${BUCKET_NAME}"/deploy/stack/ --recursive --grants read=uri=http://acs.amazonaws.com/groups/global/AuthenticatedUsers
+#
+#
+## Create Stack in AWS
+#echo "Create : ${STACK_NAME}"
+#echo $ENV
+#echo -e "Create Stack ${STACK_NAME}\n"
+#aws cloudformation create-stack --stack-name "${STACK_NAME}" --template-url  https://s3.amazonaws.com/"${BUCKET_NAME}"/deploy/stack/stack_main.json \
+#--parameters ParameterKey=KeyName,ParameterValue="${KEY_NAME}" \
+#ParameterKey=Release,ParameterValue="${RELEASE}" \
+#ParameterKey=AccountNumber,ParameterValue="${AWS_ACCOUNT_NUMBER}" \
+#ParameterKey=HostedZone,ParameterValue="${HOSTED_ZONE_NAME}" \
+#ParameterKey=ConfigBucketName,ParameterValue="${BUCKET_NAME}" \
+#ParameterKey=LogCollector,ParameterValue="${LOG_COLLECTOR}" \
+#ParameterKey=SumoAccessID,ParameterValue="${SUMO_ACCESS_ID}" \
+#ParameterKey=SumoAccessKey,ParameterValue="${SUMO_ACCESS_KEY}" \
+#ParameterKey=NewRelicLicenseKey,ParameterValue="${NEWRELIC_LICENSE_KEY}" \
+#ParameterKey=Environment,ParameterValue="${ENV}" --capabilities CAPABILITY_IAM --disable-rollback
+#
+## Check Stack Status
+#COMMAND="aws cloudformation describe-stacks --stack-name ${STACK_NAME} | jq  '.Stacks[0].StackStatus' |  cut -d \"\\\"\" -f2"
+#checkStackStatus "create stack" "CREATE_COMPLETE" 45 "$COMMAND"
+#
+#echo "Stack created... displaying info"
+#aws cloudformation describe-stacks --stack-name "${STACK_NAME}"

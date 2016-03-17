@@ -25,3 +25,5 @@ This is a simple weather app. It demonstrates solutions for common microservice 
 3. Create AWS resources and deploy containers in ECS cluster
 ```cd ./cloud-formation/deploy/```
 ```sh ./create-deployment.sh <bucketName> <keyName> <hostedZoneName> <logCollector clouwatch|sumologic>```
+
+http://microservices-test.goe3.ca/
